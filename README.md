@@ -14,7 +14,18 @@ What's working:
 - `/api/health` route that calls Claude Sonnet 4.6 with a trivial prompt and returns the response, model, latency, and timestamp
 - Landing page renders system status (live call to `/api/health`) and the 10-PR build roadmap
 
-The remaining PRs (demo data through Q&A + audit trail) are not yet built — see Roadmap below.
+The remaining PRs (rubric through Q&A + audit trail) are not yet built — see Roadmap below.
+
+### PR 2 — Demo data + viewer (complete)
+
+The healthcare procurement scenario lives in `/public/demo-bids/`:
+
+- `rfp.pdf` — Midwest Regional Health RFP for ambient clinical documentation
+- `scribeai-bid.pdf` — ScribeAI Health response (premium positioning)
+- `clinicalnote-bid.pdf` — ClinicalNote.ai response (aggressive pricing)
+- `documind-bid.pdf` — DocuMind Health response (specialty depth)
+
+Document metadata lives in `lib/documents.ts`. The `/documents` route lists all four; `/documents/[id]` renders an inline PDF viewer.
 
 ## Tech stack
 
@@ -65,7 +76,7 @@ After the deploy, visit the production URL and confirm the system status card sh
 ## Roadmap
 
 - [x] **PR 1 — Scaffold** — Next.js, Anthropic SDK, health check
-- [ ] PR 2 — Demo data + viewer (RFP + 3 vendor bid PDFs)
+- [x] **PR 2 — Demo data + viewer** — RFP + 3 vendor bid PDFs
 - [ ] PR 3 — Rubric configurator (categories, weights, hard requirements)
 - [ ] PR 4 — Ingestion agents (RFP and bid parsing to structured JSON)
 - [ ] PR 5 — Technical Evaluator (per-vendor technical scoring with citations)

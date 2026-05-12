@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Check, Circle } from "lucide-react";
+import { ArrowRight, Check, Circle } from "lucide-react";
 
 import {
   Card,
@@ -45,7 +46,7 @@ const ROADMAP: RoadmapItem[] = [
     pr: 2,
     title: "Demo data + viewer",
     description: "RFP + 3 vendor bid PDFs",
-    done: false,
+    done: true,
   },
   {
     pr: 3,
@@ -222,6 +223,15 @@ export default function Home() {
               )}
             </CardContent>
           </Card>
+          <div>
+            <Link
+              href="/documents"
+              className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors"
+            >
+              View the demo procurement scenario
+              <ArrowRight className="size-4" />
+            </Link>
+          </div>
         </section>
 
         <section className="space-y-4">
