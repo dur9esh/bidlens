@@ -58,7 +58,7 @@ const ROADMAP: RoadmapItem[] = [
     pr: 4,
     title: "Ingestion agents",
     description: "RFP and bid parsing to structured JSON",
-    done: false,
+    done: true,
   },
   {
     pr: 5,
@@ -228,7 +228,7 @@ export default function Home() {
               href="/documents"
               className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors"
             >
-              View the demo procurement scenario
+              View documents
               <ArrowRight className="size-4" />
             </Link>
             <Link
@@ -236,6 +236,13 @@ export default function Home() {
               className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors"
             >
               Configure rubric
+              <ArrowRight className="size-4" />
+            </Link>
+            <Link
+              href="/ingestions"
+              className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors"
+            >
+              Run ingestion
               <ArrowRight className="size-4" />
             </Link>
           </div>
