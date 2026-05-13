@@ -52,7 +52,7 @@ const ROADMAP: RoadmapItem[] = [
     pr: 3,
     title: "Rubric configurator",
     description: "Categories, weights, hard requirements",
-    done: false,
+    done: true,
   },
   {
     pr: 4,
@@ -223,12 +223,19 @@ export default function Home() {
               )}
             </CardContent>
           </Card>
-          <div>
+          <div className="flex flex-wrap gap-3">
             <Link
               href="/documents"
               className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors"
             >
               View the demo procurement scenario
+              <ArrowRight className="size-4" />
+            </Link>
+            <Link
+              href="/rubric"
+              className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors"
+            >
+              Configure rubric
               <ArrowRight className="size-4" />
             </Link>
           </div>
