@@ -37,6 +37,20 @@ The rubric defines how BidLens scores vendor bids: weighted categories with nest
 - Persistence: GET/PUT `/api/rubric`
 - Default rubric content: `lib/rubric/defaults.ts`
 
+### PR 4 — Document ingestion (complete)
+
+BidLens reads each PDF and extracts structured data with citations back to source text. Two specialized agents:
+
+- **RFP parser** — extracts buyer name, scope, criteria summary, hard requirements, commercial/contract/data expectations
+- **Bid parser** — extracts vendor identity, technical capabilities, pricing breakdown, contract terms, compliance posture, references, notable clauses
+
+Each ingestion is a single Claude Sonnet 4.6 call using PDF document input + tool use for structured output. Every claim carries at least one citation (verbatim excerpt + page number).
+
+- Page: `/ingestions` lets you trigger ingestion per document and inspect the structured JSON output
+- Persistence: `ingestions` table (`status`, `model`, token counts, latency, `result` JSONB)
+- Endpoints: `GET /api/ingestions`, `GET /api/ingestions/[id]`, `POST /api/ingestions/[id]`
+- Schema types: `lib/ingestion/types.ts` (Zod-validated against tool output)
+
 ## Tech stack
 
 - **Framework:** Next.js 15 (App Router) on TypeScript strict mode
@@ -95,7 +109,7 @@ After the deploy, visit the production URL and confirm the system status card sh
 - [x] **PR 1 — Scaffold** — Next.js, Anthropic SDK, health check
 - [x] **PR 2 — Demo data + viewer** — RFP + 3 vendor bid PDFs
 - [x] **PR 3 — Rubric configurator** — categories, weights, hard requirements (Neon + Drizzle)
-- [ ] PR 4 — Ingestion agents (RFP and bid parsing to structured JSON)
+- [x] **PR 4 — Ingestion agents** — RFP and bid parsing to structured JSON with citations
 - [ ] PR 5 — Technical Evaluator (per-vendor technical scoring with citations)
 - [ ] PR 6 — Commercial Evaluator (TCO normalization + commercial scoring)
 - [ ] PR 7 — Compliance Evaluator (certification + BAA verification)
