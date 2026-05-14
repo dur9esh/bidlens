@@ -15,7 +15,7 @@ import {
 type HealthOk = {
   status: "ok";
   model: string;
-  claudeResponse: string;
+  modelResponse: string;
   latencyMs: number;
   timestamp: string;
 };
@@ -39,7 +39,7 @@ const ROADMAP: RoadmapItem[] = [
   {
     pr: 1,
     title: "Scaffold",
-    description: "Next.js, Anthropic SDK, health check",
+    description: "Next.js, Gemini SDK, health check",
     done: true,
   },
   {
@@ -174,15 +174,15 @@ export default function Home() {
                 />
                 <CardTitle className="text-slate-900">
                   {loading
-                    ? "Checking Claude integration…"
+                    ? "Checking Gemini integration…"
                     : health?.status === "ok"
-                      ? "Claude integration live"
-                      : "Claude integration error"}
+                      ? "Gemini integration live"
+                      : "Gemini integration error"}
                 </CardTitle>
               </div>
               <CardDescription className="pl-6">
                 Calls <code className="font-mono">/api/health</code> on page
-                load. The endpoint hits Claude with a trivial prompt and
+                load. The endpoint hits Gemini with a trivial prompt and
                 returns the response.
               </CardDescription>
             </CardHeader>
@@ -197,8 +197,8 @@ export default function Home() {
                     value={`${health.latencyMs} ms`}
                   />
                   <Field
-                    label="Claude response"
-                    value={health.claudeResponse}
+                    label="Gemini response"
+                    value={health.modelResponse}
                     mono
                     fullWidth
                   />
@@ -214,7 +214,7 @@ export default function Home() {
                     {health?.error ?? "Unknown error"}
                   </p>
                   <p className="text-slate-600">
-                    Add <code className="font-mono">ANTHROPIC_API_KEY</code>{" "}
+                    Add <code className="font-mono">GEMINI_API_KEY</code>{" "}
                     to <code className="font-mono">.env.local</code> for
                     local dev, or to Vercel project Environment Variables for
                     production.

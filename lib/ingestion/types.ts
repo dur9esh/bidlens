@@ -7,8 +7,8 @@ import { z } from "zod";
 export const citationSchema = z.object({
   /** Approximate page number (1-indexed) where the claim appears. */
   page: z.number().int().min(1),
-  /** Verbatim excerpt from the source document (max 200 chars). */
-  verbatim_excerpt: z.string().max(200),
+  /** Verbatim excerpt from the source document (max 500 chars). */
+  verbatim_excerpt: z.string().max(500),
 });
 export type Citation = z.infer<typeof citationSchema>;
 

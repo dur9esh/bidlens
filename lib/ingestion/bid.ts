@@ -1,189 +1,195 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-import { getClaude, MODELS } from "@/lib/claude";
+import { Type } from "@google/genai";
+
+import { getAI, MODELS, stripJsonFences } from "@/lib/ai";
 import {
   bidIngestionResultSchema,
   type BidIngestionResult,
 } from "./types";
 
-const SYSTEM_PROMPT = `You are an expert procurement analyst. You will receive a vendor's bid response to an RFP and must extract its content into the provided tool call.
+const SYSTEM_PROMPT = `You are an expert procurement analyst. You will receive a vendor's bid response to an RFP and must extract its content as JSON matching the provided schema.
 
 Rules:
 - Be faithful to the source. Do not invent capabilities, prices, or commitments the bid does not state.
-- Every claim you make must include a citation: a verbatim excerpt (under 200 characters) of the exact text in the bid that supports it, plus its approximate page number.
-- Where a field is not addressed in the bid, use null (for numbers/booleans) or the appropriate enum value (e.g. "unknown").
+- Every claim must include at least one citation: a verbatim excerpt (under 500 characters) of the exact text in the bid that supports it, plus its approximate page number (1-indexed).
+- Where a field is not addressed in the bid, use null (for numbers/booleans/optional strings) or the appropriate enum value (e.g. "unknown").
 - Surface notable contractual clauses verbatim — especially anything that diverges from typical buyer expectations on IP ownership, data retention, auto-renewal, or model training.
 - Be precise on pricing math. If the bid states a per-provider monthly rate and a provider count, compute the annual subscription total; cite the relevant text.
-
-You must call the record_bid_ingestion tool exactly once with the structured result.`;
+- Output ONLY the JSON object. No prose, no markdown fences.`;
 
 const citationSchemaJson = {
-  type: "object" as const,
+  type: Type.OBJECT,
   properties: {
-    page: { type: "integer", minimum: 1 },
-    verbatim_excerpt: { type: "string", maxLength: 200 },
+    page: { type: Type.INTEGER },
+    verbatim_excerpt: { type: Type.STRING },
   },
   required: ["page", "verbatim_excerpt"],
 };
 
 const claimSchemaJson = {
-  type: "object" as const,
+  type: Type.OBJECT,
   properties: {
-    text: { type: "string" },
+    text: { type: Type.STRING },
     citations: {
-      type: "array",
+      type: Type.ARRAY,
       items: citationSchemaJson,
-      minItems: 1,
     },
   },
   required: ["text", "citations"],
 };
 
-const TOOL_DEFINITION = {
-  name: "record_bid_ingestion",
-  description: "Records the structured ingestion of a vendor bid document.",
-  input_schema: {
-    type: "object" as const,
-    properties: {
-      vendor_name: { type: "string" },
-      submission_date: {
-        type: ["string", "null"],
-        description: "ISO date string if discoverable, else null.",
-      },
-      company_overview: {
-        type: "string",
-        description: "1-2 sentence summary of the vendor's positioning.",
-      },
-      technical: {
-        type: "object",
-        properties: {
-          epic_integration_available: { type: ["boolean", "null"] },
-          cerner_integration_available: { type: ["boolean", "null"] },
-          cerner_integration_roadmap: { type: ["string", "null"] },
-          ambient_capture_latency_seconds_median: { type: ["number", "null"] },
-          english_capture_available: { type: ["boolean", "null"] },
-          spanish_capture_available: { type: ["boolean", "null"] },
-          spanish_capture_roadmap: { type: ["string", "null"] },
-          additional_languages: { type: "array", items: { type: "string" } },
-          specialty_coverage_summary: claimSchemaJson,
-          mobile_platforms: {
-            type: "array",
-            items: { type: "string", enum: ["ios", "android", "web"] },
-          },
-          sso_providers: { type: "array", items: { type: "string" } },
+const RESPONSE_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    vendor_name: { type: Type.STRING },
+    submission_date: { type: Type.STRING, nullable: true },
+    company_overview: { type: Type.STRING },
+    technical: {
+      type: Type.OBJECT,
+      properties: {
+        epic_integration_available: { type: Type.BOOLEAN, nullable: true },
+        cerner_integration_available: { type: Type.BOOLEAN, nullable: true },
+        cerner_integration_roadmap: { type: Type.STRING, nullable: true },
+        ambient_capture_latency_seconds_median: {
+          type: Type.NUMBER,
+          nullable: true,
         },
-        required: [
-          "epic_integration_available",
-          "cerner_integration_available",
-          "cerner_integration_roadmap",
-          "ambient_capture_latency_seconds_median",
-          "english_capture_available",
-          "spanish_capture_available",
-          "spanish_capture_roadmap",
-          "additional_languages",
-          "specialty_coverage_summary",
-          "mobile_platforms",
-          "sso_providers",
-        ],
-      },
-      pricing: {
-        type: "object",
-        properties: {
-          subscription_per_provider_per_month_usd: {
-            type: ["number", "null"],
-          },
-          annual_subscription_total_usd: { type: ["number", "null"] },
-          implementation_one_time_usd: { type: ["number", "null"] },
-          annual_support_usd: { type: ["number", "null"] },
-          three_year_total_contract_value_usd: { type: ["number", "null"] },
-          pricing_model_notes: claimSchemaJson,
+        english_capture_available: { type: Type.BOOLEAN, nullable: true },
+        spanish_capture_available: { type: Type.BOOLEAN, nullable: true },
+        spanish_capture_roadmap: { type: Type.STRING, nullable: true },
+        additional_languages: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING },
         },
-        required: [
-          "subscription_per_provider_per_month_usd",
-          "annual_subscription_total_usd",
-          "implementation_one_time_usd",
-          "annual_support_usd",
-          "three_year_total_contract_value_usd",
-          "pricing_model_notes",
-        ],
-      },
-      contract_terms: {
-        type: "object",
-        properties: {
-          initial_term_years: { type: ["number", "null"] },
-          auto_renewal_term_years: { type: ["number", "null"] },
-          price_escalation_percent_per_year: { type: ["number", "null"] },
-          non_renewal_notice_days: { type: ["number", "null"] },
-          contract_terms_notes: claimSchemaJson,
+        specialty_coverage_summary: claimSchemaJson,
+        mobile_platforms: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING, enum: ["ios", "android", "web"] },
         },
-        required: [
-          "initial_term_years",
-          "auto_renewal_term_years",
-          "price_escalation_percent_per_year",
-          "non_renewal_notice_days",
-          "contract_terms_notes",
-        ],
-      },
-      compliance: {
-        type: "object",
-        properties: {
-          hipaa_compliant: { type: ["boolean", "null"] },
-          baa_template_acceptance: {
-            type: "string",
-            enum: [
-              "accepts_buyer_template",
-              "vendor_template_only",
-              "flexible_with_review",
-              "unknown",
-            ],
-          },
-          soc2_type_ii_status: {
-            type: "string",
-            enum: ["current", "in_progress", "none", "unknown"],
-          },
-          hitrust_r2_status: {
-            type: "string",
-            enum: ["certified", "in_progress", "roadmap", "none", "unknown"],
-          },
-          us_only_phi_residency: { type: ["boolean", "null"] },
-          model_training_data_handling: {
-            type: "string",
-            enum: ["opt_in_only", "opt_out_default", "always_uses", "unknown"],
-          },
-          encryption_at_rest: { type: ["string", "null"] },
-          encryption_in_transit: { type: ["string", "null"] },
-          compliance_notes: claimSchemaJson,
+        sso_providers: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING },
         },
-        required: [
-          "hipaa_compliant",
-          "baa_template_acceptance",
-          "soc2_type_ii_status",
-          "hitrust_r2_status",
-          "us_only_phi_residency",
-          "model_training_data_handling",
-          "encryption_at_rest",
-          "encryption_in_transit",
-          "compliance_notes",
-        ],
       },
-      references: { type: "array", items: claimSchemaJson },
-      data_ownership_terms: claimSchemaJson,
-      notable_clauses: { type: "array", items: claimSchemaJson },
+      required: [
+        "epic_integration_available",
+        "cerner_integration_available",
+        "cerner_integration_roadmap",
+        "ambient_capture_latency_seconds_median",
+        "english_capture_available",
+        "spanish_capture_available",
+        "spanish_capture_roadmap",
+        "additional_languages",
+        "specialty_coverage_summary",
+        "mobile_platforms",
+        "sso_providers",
+      ],
     },
-    required: [
-      "vendor_name",
-      "submission_date",
-      "company_overview",
-      "technical",
-      "pricing",
-      "contract_terms",
-      "compliance",
-      "references",
-      "data_ownership_terms",
-      "notable_clauses",
-    ],
+    pricing: {
+      type: Type.OBJECT,
+      properties: {
+        subscription_per_provider_per_month_usd: {
+          type: Type.NUMBER,
+          nullable: true,
+        },
+        annual_subscription_total_usd: { type: Type.NUMBER, nullable: true },
+        implementation_one_time_usd: { type: Type.NUMBER, nullable: true },
+        annual_support_usd: { type: Type.NUMBER, nullable: true },
+        three_year_total_contract_value_usd: {
+          type: Type.NUMBER,
+          nullable: true,
+        },
+        pricing_model_notes: claimSchemaJson,
+      },
+      required: [
+        "subscription_per_provider_per_month_usd",
+        "annual_subscription_total_usd",
+        "implementation_one_time_usd",
+        "annual_support_usd",
+        "three_year_total_contract_value_usd",
+        "pricing_model_notes",
+      ],
+    },
+    contract_terms: {
+      type: Type.OBJECT,
+      properties: {
+        initial_term_years: { type: Type.NUMBER, nullable: true },
+        auto_renewal_term_years: { type: Type.NUMBER, nullable: true },
+        price_escalation_percent_per_year: {
+          type: Type.NUMBER,
+          nullable: true,
+        },
+        non_renewal_notice_days: { type: Type.NUMBER, nullable: true },
+        contract_terms_notes: claimSchemaJson,
+      },
+      required: [
+        "initial_term_years",
+        "auto_renewal_term_years",
+        "price_escalation_percent_per_year",
+        "non_renewal_notice_days",
+        "contract_terms_notes",
+      ],
+    },
+    compliance: {
+      type: Type.OBJECT,
+      properties: {
+        hipaa_compliant: { type: Type.BOOLEAN, nullable: true },
+        baa_template_acceptance: {
+          type: Type.STRING,
+          enum: [
+            "accepts_buyer_template",
+            "vendor_template_only",
+            "flexible_with_review",
+            "unknown",
+          ],
+        },
+        soc2_type_ii_status: {
+          type: Type.STRING,
+          enum: ["current", "in_progress", "none", "unknown"],
+        },
+        hitrust_r2_status: {
+          type: Type.STRING,
+          enum: ["certified", "in_progress", "roadmap", "none", "unknown"],
+        },
+        us_only_phi_residency: { type: Type.BOOLEAN, nullable: true },
+        model_training_data_handling: {
+          type: Type.STRING,
+          enum: ["opt_in_only", "opt_out_default", "always_uses", "unknown"],
+        },
+        encryption_at_rest: { type: Type.STRING, nullable: true },
+        encryption_in_transit: { type: Type.STRING, nullable: true },
+        compliance_notes: claimSchemaJson,
+      },
+      required: [
+        "hipaa_compliant",
+        "baa_template_acceptance",
+        "soc2_type_ii_status",
+        "hitrust_r2_status",
+        "us_only_phi_residency",
+        "model_training_data_handling",
+        "encryption_at_rest",
+        "encryption_in_transit",
+        "compliance_notes",
+      ],
+    },
+    references: { type: Type.ARRAY, items: claimSchemaJson },
+    data_ownership_terms: claimSchemaJson,
+    notable_clauses: { type: Type.ARRAY, items: claimSchemaJson },
   },
+  required: [
+    "vendor_name",
+    "submission_date",
+    "company_overview",
+    "technical",
+    "pricing",
+    "contract_terms",
+    "compliance",
+    "references",
+    "data_ownership_terms",
+    "notable_clauses",
+  ],
 };
 
 export interface BidIngestionRunResult {
@@ -198,7 +204,7 @@ export async function ingestBid(
   filename: string
 ): Promise<BidIngestionRunResult> {
   const startedAt = Date.now();
-  const claude = getClaude();
+  const ai = getAI();
   const filePath = path.join(
     process.cwd(),
     "public",
@@ -208,45 +214,56 @@ export async function ingestBid(
   const fileBuffer = await readFile(filePath);
   const fileBase64 = fileBuffer.toString("base64");
 
-  const response = await claude.messages.create({
-    model: MODELS.SONNET,
-    max_tokens: 8192,
-    system: SYSTEM_PROMPT,
-    tools: [TOOL_DEFINITION],
-    tool_choice: { type: "tool", name: "record_bid_ingestion" },
-    messages: [
+  const response = await ai.models.generateContent({
+    model: MODELS.FLASH,
+    contents: [
       {
         role: "user",
-        content: [
+        parts: [
           {
-            type: "document",
-            source: {
-              type: "base64",
-              media_type: "application/pdf",
+            inlineData: {
+              mimeType: "application/pdf",
               data: fileBase64,
             },
           },
           {
-            type: "text",
-            text: "Please ingest this vendor bid into the record_bid_ingestion tool.",
+            text: "Ingest this vendor bid into JSON matching the schema.",
           },
         ],
       },
     ],
+    config: {
+      systemInstruction: SYSTEM_PROMPT,
+      responseMimeType: "application/json",
+      responseSchema: RESPONSE_SCHEMA,
+      maxOutputTokens: 8192,
+    },
   });
 
-  const toolUseBlock = response.content.find((b) => b.type === "tool_use");
-  if (!toolUseBlock || toolUseBlock.type !== "tool_use") {
-    throw new Error("Model did not return a tool_use block");
+  const rawText = response.text ?? "";
+  if (!rawText) {
+    throw new Error("Gemini returned an empty response.");
   }
 
-  const parsed = bidIngestionResultSchema.parse(toolUseBlock.input);
+  const cleaned = stripJsonFences(rawText);
+  let parsedJson: unknown;
+  try {
+    parsedJson = JSON.parse(cleaned);
+  } catch {
+    throw new Error(
+      `Gemini did not return valid JSON. First 300 chars: ${rawText.slice(0, 300)}`
+    );
+  }
 
+  // Zod is the runtime guarantee. If Gemini's output drifts, this throws.
+  const result = bidIngestionResultSchema.parse(parsedJson);
+
+  const usage = response.usageMetadata;
   return {
-    result: parsed,
-    model: MODELS.SONNET,
-    inputTokens: response.usage.input_tokens,
-    outputTokens: response.usage.output_tokens,
+    result,
+    model: MODELS.FLASH,
+    inputTokens: usage?.promptTokenCount ?? 0,
+    outputTokens: usage?.candidatesTokenCount ?? 0,
     latencyMs: Date.now() - startedAt,
   };
 }
