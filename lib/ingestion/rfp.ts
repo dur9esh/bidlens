@@ -106,7 +106,7 @@ export async function ingestRfp(
   const fileBuffer = await readFile(filePath);
   const fileBase64 = fileBuffer.toString("base64");
 
-  const fb = await generateWithFallback({
+  const fb = await generateWithFallback("ingestion", {
     contents: [
       {
         role: "user",

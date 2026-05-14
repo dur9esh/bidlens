@@ -9,7 +9,7 @@ export async function GET() {
   const startedAt = Date.now();
 
   try {
-    const fb = await generateWithFallback({
+    const fb = await generateWithFallback("ingestion", {
       contents: [
         {
           role: "user",
