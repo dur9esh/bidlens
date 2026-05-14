@@ -64,7 +64,7 @@ const ROADMAP: RoadmapItem[] = [
     pr: 5,
     title: "Technical Evaluator",
     description: "Per-vendor technical scoring with citations",
-    done: false,
+    done: true,
   },
   {
     pr: 6,
@@ -243,6 +243,13 @@ export default function Home() {
               className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors"
             >
               Run ingestion
+              <ArrowRight className="size-4" />
+            </Link>
+            <Link
+              href="/evaluations"
+              className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors"
+            >
+              Run evaluations
               <ArrowRight className="size-4" />
             </Link>
           </div>
