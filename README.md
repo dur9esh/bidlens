@@ -10,8 +10,8 @@ What's working:
 
 - Next.js 15 (App Router) project on TypeScript strict mode with Tailwind CSS v4
 - shadcn/ui initialized with `card` and `button` components
-- `@anthropic-ai/sdk` integrated via `lib/claude.ts` wrapper exposing `claude-sonnet-4-6` and `claude-opus-4-7`
-- `/api/health` route that calls Claude Sonnet 4.6 with a trivial prompt and returns the response, model, latency, and timestamp
+- `@google/genai` integrated via `lib/ai.ts` wrapper exposing `gemini-2.5-flash` (workhorse) and `gemini-2.5-pro` (reserved for later synthesis PRs)
+- `/api/health` route that calls Gemini 2.5 Flash with a trivial prompt and returns the response, model, latency, and timestamp
 - Landing page renders system status (live call to `/api/health`) and the 10-PR build roadmap
 
 The remaining PRs (ingestion through Q&A + audit trail) are not yet built — see Roadmap below.
@@ -44,19 +44,19 @@ BidLens reads each PDF and extracts structured data with citations back to sourc
 - **RFP parser** — extracts buyer name, scope, criteria summary, hard requirements, commercial/contract/data expectations
 - **Bid parser** — extracts vendor identity, technical capabilities, pricing breakdown, contract terms, compliance posture, references, notable clauses
 
-Each ingestion is a single Claude Sonnet 4.6 call using PDF document input + tool use for structured output. Every claim carries at least one citation (verbatim excerpt + page number).
+Each ingestion is a single Gemini 2.5 Flash call using PDF input (`inlineData`) plus a constrained JSON `responseSchema` for structured output. Every claim carries at least one citation (verbatim excerpt + page number). Zod validates the response at runtime — if the model drifts from schema, the ingestion errors cleanly rather than corrupting downstream agents.
 
 - Page: `/ingestions` lets you trigger ingestion per document and inspect the structured JSON output
 - Persistence: `ingestions` table (`status`, `model`, token counts, latency, `result` JSONB)
 - Endpoints: `GET /api/ingestions`, `GET /api/ingestions/[id]`, `POST /api/ingestions/[id]`
-- Schema types: `lib/ingestion/types.ts` (Zod-validated against tool output)
+- Schema types: `lib/ingestion/types.ts` (Zod schema is the runtime contract)
 
 ## Tech stack
 
 - **Framework:** Next.js 15 (App Router) on TypeScript strict mode
 - **Styling:** Tailwind CSS v4
 - **Components:** shadcn/ui (Radix Slot, class-variance-authority, lucide-react)
-- **AI SDK:** `@anthropic-ai/sdk`
+- **AI:** Google Gemini via `@google/genai` SDK — `gemini-2.5-flash` workhorse, `gemini-2.5-pro` for synthesis (later PRs)
 - **Database:** Neon Postgres (via Vercel Marketplace) with Drizzle ORM
 - **Package manager:** pnpm
 - **Node:** 20+
@@ -70,13 +70,13 @@ Each ingestion is a single Claude Sonnet 4.6 call using PDF document input + too
    pnpm install
    ```
 
-2. Copy the env example and add your Anthropic API key:
+2. Copy the env example and add your Gemini API key:
 
    ```bash
    cp .env.example .env.local
    ```
 
-   Then edit `.env.local` and set `ANTHROPIC_API_KEY` (get one at https://console.anthropic.com/settings/keys).
+   Then edit `.env.local` and set `GEMINI_API_KEY` (get one at https://aistudio.google.com).
 
 3. Start the dev server:
 
@@ -84,9 +84,9 @@ Each ingestion is a single Claude Sonnet 4.6 call using PDF document input + too
    pnpm dev
    ```
 
-4. Open http://localhost:3000. The landing page calls `/api/health` on load and shows whether the Claude integration is live.
+4. Open http://localhost:3000. The landing page calls `/api/health` on load and shows whether the Gemini integration is live.
 
-If `ANTHROPIC_API_KEY` is not set, the page still renders but the system status card will show a clear error explaining what's missing.
+If `GEMINI_API_KEY` is not set, the page still renders but the system status card will show a clear error explaining what's missing.
 
 ### Database setup (one-time, local dev)
 
@@ -99,14 +99,15 @@ If `ANTHROPIC_API_KEY` is not set, the page still renders but the system status 
 BidLens is built to deploy to Vercel:
 
 1. Connect this repo to a Vercel project.
-2. Add `ANTHROPIC_API_KEY` to **Project Settings → Environment Variables** (Production, Preview, Development as appropriate).
-3. Push to the configured branch — Vercel auto-deploys.
+2. Add `GEMINI_API_KEY` to **Project Settings → Environment Variables** (Production, Preview, Development as appropriate).
+3. The Neon integration auto-injects `DATABASE_URL`; if you provisioned Neon separately, add it manually.
+4. Push to the configured branch — Vercel auto-deploys.
 
 After the deploy, visit the production URL and confirm the system status card shows a green "ok" indicator.
 
 ## Roadmap
 
-- [x] **PR 1 — Scaffold** — Next.js, Anthropic SDK, health check
+- [x] **PR 1 — Scaffold** — Next.js, Gemini SDK, health check
 - [x] **PR 2 — Demo data + viewer** — RFP + 3 vendor bid PDFs
 - [x] **PR 3 — Rubric configurator** — categories, weights, hard requirements (Neon + Drizzle)
 - [x] **PR 4 — Ingestion agents** — RFP and bid parsing to structured JSON with citations
