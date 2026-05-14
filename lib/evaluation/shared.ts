@@ -116,7 +116,7 @@ export async function runEvaluationAgent(args: {
 }): Promise<GeminiEvaluationRun> {
   const startedAt = Date.now();
 
-  const fb = await generateWithFallback({
+  const fb = await generateWithFallback("evaluation", {
     contents: [{ role: "user", parts: [{ text: args.userPrompt }] }],
     config: {
       systemInstruction: args.systemPrompt,

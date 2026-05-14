@@ -4,12 +4,9 @@ import { GoogleGenAI } from "@google/genai";
  * Model IDs used throughout BidLens.
  *
  * BidLens's agent layer is provider-agnostic and model-resilient. Calls go
- * through generateWithFallback(), which tries models in MODEL_CHAIN order and
- * degrades gracefully on rate-limit (429) or transient server errors (5xx).
- *
- * - FLASH_LITE: primary. Largest free-tier daily quota — the workhorse.
- * - FLASH:      fallback #1. Stronger reasoning, smaller free-tier quota.
- * - PRO:        fallback #2. Strongest reasoning, smallest free-tier quota.
+ * through generateWithFallback(taskType, args), which routes through a per-task
+ * model chain (see MODEL_CHAINS) and degrades gracefully on rate-limit (429)
+ * or transient server errors (5xx).
  */
 export const MODELS = {
   FLASH_LITE: "gemini-2.5-flash-lite",
@@ -19,12 +16,39 @@ export const MODELS = {
 
 export type ModelId = (typeof MODELS)[keyof typeof MODELS];
 
-/** Ordered fallback chain. generateWithFallback() tries these in sequence. */
-export const MODEL_CHAIN: ModelId[] = [
-  MODELS.FLASH_LITE,
-  MODELS.FLASH,
-  MODELS.PRO,
-];
+/**
+ * Task-aware model routing.
+ *
+ * Different agent types have different cognitive demands and call volumes, so
+ * they route through different model chains. Two principles:
+ *
+ *  1. Capability matching — extraction gets the light model, synthesis gets
+ *     the strong model, judgment sits between.
+ *  2. Quota-aware ordering — high-volume task types lead with the high-quota
+ *     model (flash-lite, ~1,500 req/day free tier); the low-volume synthesis
+ *     task leads with the low-quota model (pro, ~50 req/day). The free-tier
+ *     rate-limit budget is respected by design.
+ *
+ * Every chain has full fallback coverage — a rate limit or transient outage
+ * on one model degrades gracefully to the next, never an outage.
+ */
+export type TaskType = "ingestion" | "evaluation" | "synthesis" | "qa";
+
+export const MODEL_CHAINS: Record<TaskType, ModelId[]> = {
+  // Faithful extraction against an explicit schema. Low reasoning demand,
+  // highest call volume — lead with the cheapest capable, highest-quota model.
+  ingestion: [MODELS.FLASH_LITE, MODELS.FLASH, MODELS.PRO],
+  // Scoring nuanced trade-offs against a rubric. Judgment task — lead with the
+  // stronger model; flash-lite is an acceptable degradation, pro the safety net.
+  evaluation: [MODELS.FLASH, MODELS.FLASH_LITE, MODELS.PRO],
+  // Weighing vendors against each other, surfacing non-obvious risks, writing a
+  // defensible memo. Highest reasoning demand, lowest call volume (~2 calls) —
+  // worth the strongest model; pro's small quota is fine at this volume.
+  synthesis: [MODELS.PRO, MODELS.FLASH, MODELS.FLASH_LITE],
+  // Grounded retrieval, interactive, latency-sensitive — lead with the fast
+  // high-quota model.
+  qa: [MODELS.FLASH_LITE, MODELS.FLASH, MODELS.PRO],
+};
 
 let _client: GoogleGenAI | null = null;
 
@@ -75,7 +99,7 @@ export interface GenerateArgs {
 export interface FallbackResult {
   /** The raw text returned by the model (JSON string when responseMimeType is JSON). */
   text: string;
-  /** The model that actually served this request (may differ from primary if a fallback fired). */
+  /** The model that actually served this request (may differ from the chain's primary if a fallback fired). */
   modelUsed: ModelId;
   /** finishReason from the served candidate, if available. */
   finishReason: string | undefined;
@@ -96,7 +120,6 @@ function isRetryableError(error: unknown): boolean {
   if (typeof error !== "object" || error === null) return false;
   const status = (error as { status?: number }).status;
   if (status === 429 || status === 500 || status === 503) return true;
-  // Some errors surface the code in the message instead.
   const message = (error as { message?: string }).message ?? "";
   if (/\b429\b|RESOURCE_EXHAUSTED|quota/i.test(message)) return true;
   if (/\b50[03]\b|UNAVAILABLE|INTERNAL/i.test(message)) return true;
@@ -104,21 +127,24 @@ function isRetryableError(error: unknown): boolean {
 }
 
 /**
- * Calls Gemini's generateContent, trying each model in MODEL_CHAIN in order.
- * On a retryable error (rate limit / transient 5xx), logs it and tries the next
- * model. On any other error, throws immediately. If every model in the chain
- * fails, throws an aggregated error.
+ * Calls Gemini's generateContent, routing through the model chain for the
+ * given task type. Tries each model in order; on a retryable error (rate
+ * limit / transient 5xx), logs it and tries the next. On any other error,
+ * throws immediately. If every model in the chain fails, throws an aggregated
+ * error.
  *
  * This is the single entry point all BidLens agents use to call the model.
  */
 export async function generateWithFallback(
+  taskType: TaskType,
   args: GenerateArgs
 ): Promise<FallbackResult> {
   const ai = getAI();
+  const chain = MODEL_CHAINS[taskType];
   const fallbacksTriggered: { model: ModelId; reason: string }[] = [];
 
-  for (let i = 0; i < MODEL_CHAIN.length; i++) {
-    const model = MODEL_CHAIN[i];
+  for (let i = 0; i < chain.length; i++) {
+    const model = chain[i];
     try {
       const response = await ai.models.generateContent({
         model,
@@ -141,17 +167,17 @@ export async function generateWithFallback(
     } catch (error) {
       const message =
         error instanceof Error ? error.message : String(error);
-      if (isRetryableError(error) && i < MODEL_CHAIN.length - 1) {
+      if (isRetryableError(error) && i < chain.length - 1) {
         console.warn(
-          `[generateWithFallback] ${model} failed (${message}). Falling back to ${MODEL_CHAIN[i + 1]}.`
+          `[generateWithFallback:${taskType}] ${model} failed (${message}). ` +
+            `Falling back to ${chain[i + 1]}.`
         );
         fallbacksTriggered.push({ model, reason: message });
         continue;
       }
-      // Non-retryable error, or we're out of models to try.
-      if (i === MODEL_CHAIN.length - 1) {
+      if (i === chain.length - 1) {
         throw new Error(
-          `All models in the fallback chain failed. Last error from ${model}: ${message}`
+          `All models in the ${taskType} chain failed. Last error from ${model}: ${message}`
         );
       }
       throw error;
@@ -160,6 +186,6 @@ export async function generateWithFallback(
 
   // Unreachable, but satisfies the type checker.
   throw new Error(
-    "generateWithFallback: model chain exhausted unexpectedly"
+    `generateWithFallback: ${taskType} chain exhausted unexpectedly`
   );
 }

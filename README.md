@@ -65,7 +65,18 @@ The first per-vendor scoring agent. For each vendor, the Technical Evaluator sco
 
 ### PR 5.5 — AI fallback chain
 
-All Gemini calls go through `generateWithFallback()` in `lib/ai.ts`, which tries models in order — `gemini-2.5-flash-lite` (primary, largest free-tier quota) → `gemini-2.5-flash` → `gemini-2.5-pro` — and degrades gracefully on rate-limit (429) or transient server errors (5xx). Non-retryable errors (400 / 401 / 403, schema failures) surface immediately rather than burning the chain. Each ingestion and evaluation record stores the model that actually served it, so fallbacks are visible and attribution stays honest.
+All Gemini calls go through `generateWithFallback()` in `lib/ai.ts`, which degrades gracefully on rate-limit (429) or transient server errors (5xx). Non-retryable errors (400 / 401 / 403, schema failures) surface immediately rather than burning the chain. Each ingestion and evaluation record stores the model that actually served it, so fallbacks are visible and attribution stays honest.
+
+### PR 5.6 — Task-aware model routing
+
+`generateWithFallback(taskType, args)` routes each call through a model chain chosen for that task type, defined in `MODEL_CHAINS` (`lib/ai.ts`):
+
+- **Ingestion** — `flash-lite → flash → pro`. Extraction; low reasoning demand, high volume, so the cheapest high-quota model leads.
+- **Evaluation** — `flash → flash-lite → pro`. Judgment; the stronger model leads, flash-lite is an acceptable degradation.
+- **Synthesis** — `pro → flash → flash-lite`. Highest reasoning demand, lowest volume (~2 calls), so the strongest model leads.
+- **Q&A** — `flash-lite → flash → pro`. Interactive and latency-sensitive.
+
+Two principles: capability matching (model strength to task demand) and quota-aware ordering (high-volume tasks lead with the high-quota model). Every chain has full fallback coverage. Rationale lives in `lib/ai-routing-policy.ts` and is surfaced on the landing page.
 
 ## Tech stack
 

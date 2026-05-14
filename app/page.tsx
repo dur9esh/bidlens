@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRight, Check, Circle } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Circle,
+} from "lucide-react";
 
 import {
   Card,
@@ -11,6 +17,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import type { TaskType } from "@/lib/ai";
+import {
+  getChainFor,
+  ROUTING_RATIONALE,
+  TASK_TYPES_IN_ORDER,
+} from "@/lib/ai-routing-policy";
 
 type HealthOk = {
   status: "ok";
@@ -313,6 +330,8 @@ export default function Home() {
             ))}
           </ol>
         </section>
+
+        <RoutingPolicySection />
       </main>
 
       <footer className="border-t border-slate-200/70 mt-8">
@@ -322,6 +341,95 @@ export default function Home() {
           </p>
         </div>
       </footer>
+    </div>
+  );
+}
+
+function RoutingPolicySection() {
+  const [open, setOpen] = useState(false);
+  return (
+    <section className="space-y-3">
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <Card className="shadow-sm border-slate-200/80">
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className="w-full text-left px-6 py-4 flex items-center gap-2 hover:bg-slate-50/60 rounded-xl transition-colors"
+            >
+              {open ? (
+                <ChevronDown className="size-4 text-slate-500" />
+              ) : (
+                <ChevronRight className="size-4 text-slate-500" />
+              )}
+              <span className="text-sm font-medium uppercase tracking-wider text-slate-500">
+                Model routing policy
+              </span>
+              <span className="text-xs text-slate-400">
+                {open ? "" : "show details"}
+              </span>
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="pt-0 pb-6 space-y-4">
+              <p className="text-sm text-slate-600">
+                Every Gemini call routes through a per-task chain. The right
+                model gets matched to the right task — and the chain falls
+                back automatically on rate limits or transient errors.
+              </p>
+              <div className="space-y-3">
+                {TASK_TYPES_IN_ORDER.map((tt) => (
+                  <RoutingRow key={tt} taskType={tt} />
+                ))}
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+    </section>
+  );
+}
+
+function RoutingRow({ taskType }: { taskType: TaskType }) {
+  const rationale = ROUTING_RATIONALE[taskType];
+  const chain = getChainFor(taskType);
+  return (
+    <div className="rounded-md border border-slate-200 bg-white px-3 py-2.5 space-y-1.5">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <p className="font-medium text-sm text-slate-900">{rationale.label}</p>
+        <div className="flex items-center gap-1.5 text-xs">
+          {chain.map((m, i) => (
+            <span key={m} className="inline-flex items-center gap-1.5">
+              <span
+                className={
+                  i === 0
+                    ? "font-mono font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded px-1.5 py-0.5"
+                    : "font-mono text-slate-500 bg-slate-100 rounded px-1.5 py-0.5"
+                }
+              >
+                {m}
+              </span>
+              {i < chain.length - 1 && (
+                <span className="text-slate-400" aria-hidden>
+                  →
+                </span>
+              )}
+            </span>
+          ))}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 text-xs text-slate-500">
+        <p>
+          <span className="text-slate-400">Demand · </span>
+          {rationale.demand}
+        </p>
+        <p>
+          <span className="text-slate-400">Volume · </span>
+          {rationale.volume}
+        </p>
+      </div>
+      <p className="text-xs text-slate-600 leading-relaxed">
+        {rationale.rationale}
+      </p>
     </div>
   );
 }
