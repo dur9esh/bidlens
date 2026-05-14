@@ -1,4 +1,4 @@
-import { getAI, MODELS, stripJsonFences } from "@/lib/ai";
+import { generateWithFallback, type ModelId } from "@/lib/ai";
 import { getDocument, getRfp } from "@/lib/documents";
 import { getIngestion } from "@/lib/ingestion/dao";
 import type {
@@ -97,16 +97,16 @@ export function recomputeWeightedScore(
 
 export interface GeminiEvaluationRun {
   result: CategoryEvaluationResult;
-  model: string;
+  /** The model that actually served the request (may be a fallback). */
+  model: ModelId;
   inputTokens: number;
   outputTokens: number;
   latencyMs: number;
 }
 
 /**
- * Shared Gemini call for category evaluators. The caller (each category
- * evaluator) is responsible for building the prompts and passing the right
- * Zod parser.
+ * Shared Gemini call for category evaluators. Goes through the fallback chain
+ * in lib/ai.ts. The caller builds the prompts and passes the Zod parser.
  */
 export async function runEvaluationAgent(args: {
   systemPrompt: string;
@@ -115,10 +115,8 @@ export async function runEvaluationAgent(args: {
   zodParse: (raw: unknown) => CategoryEvaluationResult;
 }): Promise<GeminiEvaluationRun> {
   const startedAt = Date.now();
-  const ai = getAI();
 
-  const response = await ai.models.generateContent({
-    model: MODELS.FLASH,
+  const fb = await generateWithFallback({
     contents: [{ role: "user", parts: [{ text: args.userPrompt }] }],
     config: {
       systemInstruction: args.systemPrompt,
@@ -129,36 +127,32 @@ export async function runEvaluationAgent(args: {
     },
   });
 
-  const finishReason = response.candidates?.[0]?.finishReason;
-  if (finishReason === "MAX_TOKENS") {
+  if (fb.finishReason === "MAX_TOKENS") {
     throw new Error(
       "Evaluation output was truncated (finishReason=MAX_TOKENS). Raise `maxOutputTokens` and/or lower `thinkingBudget` in lib/evaluation/shared.ts."
     );
   }
 
-  const rawText = response.text ?? "";
-  if (!rawText) {
+  if (!fb.text) {
     throw new Error("Gemini returned an empty evaluation response.");
   }
 
-  const cleaned = stripJsonFences(rawText);
   let parsedJson: unknown;
   try {
-    parsedJson = JSON.parse(cleaned);
+    parsedJson = JSON.parse(fb.text);
   } catch {
     throw new Error(
-      `Evaluator did not return valid JSON. First 300 chars: ${rawText.slice(0, 300)}`
+      `Evaluator did not return valid JSON. First 300 chars: ${fb.text.slice(0, 300)}`
     );
   }
 
   const result = args.zodParse(parsedJson);
-  const usage = response.usageMetadata;
 
   return {
     result,
-    model: MODELS.FLASH,
-    inputTokens: usage?.promptTokenCount ?? 0,
-    outputTokens: usage?.candidatesTokenCount ?? 0,
+    model: fb.modelUsed,
+    inputTokens: fb.inputTokens,
+    outputTokens: fb.outputTokens,
     latencyMs: Date.now() - startedAt,
   };
 }

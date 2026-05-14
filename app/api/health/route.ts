@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getAI, MODELS } from "@/lib/ai";
+import { generateWithFallback } from "@/lib/ai";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -9,21 +9,26 @@ export async function GET() {
   const startedAt = Date.now();
 
   try {
-    const ai = getAI();
-    const response = await ai.models.generateContent({
-      model: MODELS.FLASH,
-      contents:
-        'Respond with exactly this text and nothing else: "BidLens health check OK"',
+    const fb = await generateWithFallback({
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: 'Respond with exactly this text and nothing else: "BidLens health check OK"',
+            },
+          ],
+        },
+      ],
+      config: { maxOutputTokens: 256 },
     });
-
-    const text = (response.text ?? "").trim();
-    const latencyMs = Date.now() - startedAt;
 
     return NextResponse.json({
       status: "ok",
-      model: MODELS.FLASH,
-      modelResponse: text,
-      latencyMs,
+      model: fb.modelUsed,
+      modelResponse: fb.text.trim(),
+      fallbacksTriggered: fb.fallbacksTriggered,
+      latencyMs: Date.now() - startedAt,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

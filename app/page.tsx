@@ -16,6 +16,7 @@ type HealthOk = {
   status: "ok";
   model: string;
   modelResponse: string;
+  fallbacksTriggered?: { model: string; reason: string }[];
   latencyMs: number;
   timestamp: string;
 };
@@ -207,6 +208,13 @@ export default function Home() {
                     value={health.timestamp}
                     fullWidth
                   />
+                  {health.fallbacksTriggered &&
+                    health.fallbacksTriggered.length > 0 && (
+                      <div className="sm:col-span-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+                        Fallback active: primary model unavailable, served by{" "}
+                        <span className="font-mono">{health.model}</span>.
+                      </div>
+                    )}
                 </dl>
               ) : (
                 <div className="space-y-2 text-sm">

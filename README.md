@@ -63,12 +63,16 @@ The first per-vendor scoring agent. For each vendor, the Technical Evaluator sco
 - Endpoints: `GET /api/evaluations`, `GET|POST /api/evaluations/[vendorId]/[category]`
 - Commercial and Compliance evaluators (PRs 6–7) follow the same pattern
 
+### PR 5.5 — AI fallback chain
+
+All Gemini calls go through `generateWithFallback()` in `lib/ai.ts`, which tries models in order — `gemini-2.5-flash-lite` (primary, largest free-tier quota) → `gemini-2.5-flash` → `gemini-2.5-pro` — and degrades gracefully on rate-limit (429) or transient server errors (5xx). Non-retryable errors (400 / 401 / 403, schema failures) surface immediately rather than burning the chain. Each ingestion and evaluation record stores the model that actually served it, so fallbacks are visible and attribution stays honest.
+
 ## Tech stack
 
 - **Framework:** Next.js 15 (App Router) on TypeScript strict mode
 - **Styling:** Tailwind CSS v4
 - **Components:** shadcn/ui (Radix Slot, class-variance-authority, lucide-react)
-- **AI:** Google Gemini via `@google/genai` SDK — `gemini-2.5-flash` workhorse, `gemini-2.5-pro` for synthesis (later PRs)
+- **AI:** Google Gemini via `@google/genai` SDK — fallback chain `gemini-2.5-flash-lite` → `gemini-2.5-flash` → `gemini-2.5-pro` (graceful degradation on rate limits / transient 5xx)
 - **Database:** Neon Postgres (via Vercel Marketplace) with Drizzle ORM
 - **Package manager:** pnpm
 - **Node:** 20+
