@@ -135,9 +135,11 @@ export function IngestionsBoard({
             Ingestions
           </h1>
           <p className="text-slate-600 max-w-2xl">
-            BidLens reads each document with Gemini 2.5 Flash and extracts
-            structured data with citations back to source text. Re-running an
-            ingestion replaces the prior result.
+            BidLens reads each document with Gemini and extracts structured
+            data with citations back to source text. Calls go through a
+            fallback chain (flash-lite → flash → pro); the model that
+            actually served each ingestion is shown in the metadata line.
+            Re-running an ingestion replaces the prior result.
           </p>
         </div>
 

@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { Type } from "@google/genai";
 
-import { getAI, MODELS, stripJsonFences } from "@/lib/ai";
+import { generateWithFallback, type ModelId } from "@/lib/ai";
 import {
   rfpIngestionResultSchema,
   type RfpIngestionResult,
@@ -86,7 +86,8 @@ const RESPONSE_SCHEMA = {
 
 export interface RfpIngestionRunResult {
   result: RfpIngestionResult;
-  model: string;
+  /** The model that actually served the request (may be a fallback). */
+  model: ModelId;
   inputTokens: number;
   outputTokens: number;
   latencyMs: number;
@@ -96,7 +97,6 @@ export async function ingestRfp(
   filename: string
 ): Promise<RfpIngestionRunResult> {
   const startedAt = Date.now();
-  const ai = getAI();
   const filePath = path.join(
     process.cwd(),
     "public",
@@ -106,8 +106,7 @@ export async function ingestRfp(
   const fileBuffer = await readFile(filePath);
   const fileBase64 = fileBuffer.toString("base64");
 
-  const response = await ai.models.generateContent({
-    model: MODELS.FLASH,
+  const fb = await generateWithFallback({
     contents: [
       {
         role: "user",
@@ -133,37 +132,33 @@ export async function ingestRfp(
     },
   });
 
-  const finishReason = response.candidates?.[0]?.finishReason;
-  if (finishReason === "MAX_TOKENS") {
+  if (fb.finishReason === "MAX_TOKENS") {
     throw new Error(
-      "Gemini output was truncated (finishReason=MAX_TOKENS). Raise `maxOutputTokens` and/or lower `thinkingBudget` in lib/ingestion/rfp.ts."
+      "RFP ingestion output was truncated (finishReason=MAX_TOKENS). Raise `maxOutputTokens` and/or lower `thinkingBudget` in lib/ingestion/rfp.ts."
     );
   }
 
-  const rawText = response.text ?? "";
-  if (!rawText) {
+  if (!fb.text) {
     throw new Error("Gemini returned an empty response.");
   }
 
-  const cleaned = stripJsonFences(rawText);
   let parsedJson: unknown;
   try {
-    parsedJson = JSON.parse(cleaned);
+    parsedJson = JSON.parse(fb.text);
   } catch {
     throw new Error(
-      `Gemini did not return valid JSON. First 300 chars: ${rawText.slice(0, 300)}`
+      `Gemini did not return valid JSON. First 300 chars: ${fb.text.slice(0, 300)}`
     );
   }
 
   // Zod is the runtime guarantee. If Gemini's output drifts, this throws.
   const result = rfpIngestionResultSchema.parse(parsedJson);
 
-  const usage = response.usageMetadata;
   return {
     result,
-    model: MODELS.FLASH,
-    inputTokens: usage?.promptTokenCount ?? 0,
-    outputTokens: usage?.candidatesTokenCount ?? 0,
+    model: fb.modelUsed,
+    inputTokens: fb.inputTokens,
+    outputTokens: fb.outputTokens,
     latencyMs: Date.now() - startedAt,
   };
 }
