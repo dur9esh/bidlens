@@ -128,9 +128,17 @@ export async function ingestRfp(
       systemInstruction: SYSTEM_PROMPT,
       responseMimeType: "application/json",
       responseSchema: RESPONSE_SCHEMA,
-      maxOutputTokens: 8192,
+      maxOutputTokens: 32768,
+      thinkingConfig: { thinkingBudget: 2048 },
     },
   });
+
+  const finishReason = response.candidates?.[0]?.finishReason;
+  if (finishReason === "MAX_TOKENS") {
+    throw new Error(
+      "Gemini output was truncated (finishReason=MAX_TOKENS). Raise `maxOutputTokens` and/or lower `thinkingBudget` in lib/ingestion/rfp.ts."
+    );
+  }
 
   const rawText = response.text ?? "";
   if (!rawText) {
