@@ -7,8 +7,14 @@ import { z } from "zod";
 export const citationSchema = z.object({
   /** Approximate page number (1-indexed) where the claim appears. */
   page: z.number().int().min(1),
-  /** Verbatim excerpt from the source document (max 500 chars). */
-  verbatim_excerpt: z.string().max(500),
+  /**
+   * Verbatim excerpt from the source document. Practical ceiling is 1500 chars;
+   * anything longer is truncated with an ellipsis so a single long clause never
+   * fails the whole ingestion.
+   */
+  verbatim_excerpt: z
+    .string()
+    .transform((s) => (s.length > 1500 ? s.slice(0, 1500) + "…" : s)),
 });
 export type Citation = z.infer<typeof citationSchema>;
 
