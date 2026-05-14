@@ -63,6 +63,15 @@ The first per-vendor scoring agent. For each vendor, the Technical Evaluator sco
 - Endpoints: `GET /api/evaluations`, `GET|POST /api/evaluations/[vendorId]/[category]`
 - Commercial and Compliance evaluators (PRs 6–7) follow the same pattern
 
+### PR 6 — Commercial Evaluator (complete)
+
+The second per-vendor scoring agent. Scores the rubric's commercial criteria (3-year TCO, contract flexibility, implementation cost transparency, pricing model fit), checks the commercial hard requirement (auto-renewal capped at one year), and surfaces commercial risks as flags.
+
+- **Deterministic TCO normalizer** (`lib/evaluation/tco.ts`) — pure code, not an LLM call — recomputes each vendor's 3-year total cost on consistent assumptions (3,500 providers, 3-year horizon, escalation applied to years 2–3) so vendors are comparable apples-to-apples. The agent reasons about the normalized numbers; it does not do the arithmetic.
+- Agent: `lib/evaluation/commercial.ts`, reusing the shared evaluator scaffolding
+- The TCO breakdown is stored in the evaluation result (`tco_breakdown` field) and displayed in the commercial scorecard
+- Same `evaluations` table, same output contract as the Technical Evaluator; `EVALUATION_RESPONSE_SCHEMA` extracted into `lib/evaluation/shared.ts` so both evaluators share it
+
 ### PR 5.5 — AI fallback chain
 
 All Gemini calls go through `generateWithFallback()` in `lib/ai.ts`, which degrades gracefully on rate-limit (429) or transient server errors (5xx). Non-retryable errors (400 / 401 / 403, schema failures) surface immediately rather than burning the chain. Each ingestion and evaluation record stores the model that actually served it, so fallbacks are visible and attribution stays honest.
@@ -139,7 +148,7 @@ After the deploy, visit the production URL and confirm the system status card sh
 - [x] **PR 3 — Rubric configurator** — categories, weights, hard requirements (Neon + Drizzle)
 - [x] **PR 4 — Ingestion agents** — RFP and bid parsing to structured JSON with citations
 - [x] **PR 5 — Technical Evaluator** — per-vendor technical scoring with citations
-- [ ] PR 6 — Commercial Evaluator (TCO normalization + commercial scoring)
+- [x] **PR 6 — Commercial Evaluator** — TCO normalization + commercial scoring
 - [ ] PR 7 — Compliance Evaluator (certification + BAA verification)
 - [ ] PR 8 — Comparative dashboard (cross-vendor synthesis)
 - [ ] PR 9 — Risk register + Evaluation memo (Opus-driven synthesis)

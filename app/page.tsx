@@ -88,7 +88,7 @@ const ROADMAP: RoadmapItem[] = [
     pr: 6,
     title: "Commercial Evaluator",
     description: "TCO normalization + commercial scoring",
-    done: false,
+    done: true,
   },
   {
     pr: 7,

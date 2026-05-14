@@ -41,6 +41,26 @@ export const evaluationFlagSchema = z.object({
 export type EvaluationFlag = z.infer<typeof evaluationFlagSchema>;
 
 /**
+ * Pre-computed, deterministic 3-year TCO breakdown attached to commercial
+ * evaluations. Mirrors lib/evaluation/tco.ts's TcoBreakdown interface.
+ * Optional on the evaluation result because only the Commercial Evaluator
+ * produces one.
+ */
+export const tcoBreakdownSchema = z.object({
+  vendor_name: z.string(),
+  provider_count: z.number(),
+  horizon_years: z.number(),
+  year1_subscription_usd: z.number().nullable(),
+  total_subscription_usd: z.number().nullable(),
+  implementation_usd: z.number().nullable(),
+  total_support_usd: z.number().nullable(),
+  normalized_3yr_tco_usd: z.number().nullable(),
+  escalation_rate_applied: z.number(),
+  notes: z.array(z.string()),
+});
+export type TcoBreakdownSchema = z.infer<typeof tcoBreakdownSchema>;
+
+/**
  * The full result of one category evaluation for one vendor.
  * Shared shape across technical / commercial / compliance evaluators.
  */
@@ -58,6 +78,12 @@ export const categoryEvaluationResultSchema = z.object({
   flags: z.array(evaluationFlagSchema),
   /** 2-3 sentence overall summary of the vendor in this category. */
   category_summary: z.string(),
+  /**
+   * Optional, deterministic 3-year TCO breakdown. Attached server-side by the
+   * Commercial Evaluator after the agent returns; absent for Technical and
+   * Compliance evaluations.
+   */
+  tco_breakdown: tcoBreakdownSchema.optional(),
 });
 export type CategoryEvaluationResult = z.infer<
   typeof categoryEvaluationResultSchema

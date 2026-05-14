@@ -39,6 +39,7 @@ import type {
   CategoryEvaluationResult,
   EvaluationFlag,
   HardRequirementCheck,
+  TcoBreakdownSchema,
 } from "@/lib/evaluation/types";
 import type { IngestionRecord } from "@/lib/ingestion/dao";
 import type { Citation } from "@/lib/ingestion/types";
@@ -50,7 +51,7 @@ const CATEGORIES: {
   comingIn?: string;
 }[] = [
   { id: "technical", label: "Technical", available: true },
-  { id: "commercial", label: "Commercial", available: false, comingIn: "PR 6" },
+  { id: "commercial", label: "Commercial", available: true },
   { id: "compliance", label: "Compliance", available: false, comingIn: "PR 7" },
 ];
 
@@ -186,6 +187,9 @@ export function EvaluationsBoard({
   const allTechnicalComplete = bids.every(
     (b) => records[keyFor(b.id, "technical")]?.status === "complete"
   );
+  const allCommercialComplete = bids.every(
+    (b) => records[keyFor(b.id, "commercial")]?.status === "complete"
+  );
 
   return (
     <div className="flex-1">
@@ -232,10 +236,16 @@ export function EvaluationsBoard({
           </div>
         )}
 
-        {allTechnicalComplete && bids.length > 0 && (
+        {allTechnicalComplete && allCommercialComplete && bids.length > 0 && (
           <div className="rounded-lg border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-800">
-            All vendors scored on Technical. Commercial evaluation arrives in
-            PR 6.
+            Technical and Commercial scored for all vendors. Compliance
+            evaluation arrives in PR 7.
+          </div>
+        )}
+        {allTechnicalComplete && !allCommercialComplete && bids.length > 0 && (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-800">
+            All vendors scored on Technical. Commercial evaluation is now
+            available — click Evaluate on each vendor&apos;s Commercial section.
           </div>
         )}
 
@@ -372,13 +382,14 @@ function CategorySection({
                 <ChevronRight className="size-3.5" />
               )}
               {open
-                ? "Hide technical scorecard"
-                : "View technical scorecard"}
+                ? `Hide ${category.label.toLowerCase()} scorecard`
+                : `View ${category.label.toLowerCase()} scorecard`}
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent>
             <Scorecard
               vendorName={vendor.vendor ?? vendor.title}
+              category={category.label}
               result={record.result}
             />
           </CollapsibleContent>
@@ -390,9 +401,11 @@ function CategorySection({
 
 function Scorecard({
   vendorName,
+  category,
   result,
 }: {
   vendorName: string;
+  category: string;
   result: CategoryEvaluationResult;
 }) {
   const anyHardFail = result.hard_requirement_checks.some(
@@ -404,9 +417,11 @@ function Scorecard({
       {anyHardFail && (
         <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800 flex items-center gap-2">
           <AlertCircle className="size-4 shrink-0" />
-          {vendorName} fails a technical hard requirement.
+          {vendorName} fails a {category.toLowerCase()} hard requirement.
         </div>
       )}
+
+      {result.tco_breakdown && <TcoPanel tco={result.tco_breakdown} />}
 
       <section>
         <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
@@ -541,6 +556,84 @@ function FlagRow({ flag }: { flag: EvaluationFlag }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function TcoPanel({ tco }: { tco: TcoBreakdownSchema }) {
+  return (
+    <section className="rounded-md bg-white border border-slate-200 p-3">
+      <div className="flex items-baseline justify-between gap-3 mb-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          Normalized 3-year TCO
+        </h3>
+        <span className="text-[10px] text-slate-400">
+          {tco.provider_count.toLocaleString()} providers ·{" "}
+          {tco.horizon_years}-year horizon
+        </span>
+      </div>
+      <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-xs">
+        <TcoField
+          label="Year 1 subscription"
+          value={tco.year1_subscription_usd}
+        />
+        <TcoField
+          label="Total subscription"
+          value={tco.total_subscription_usd}
+        />
+        <TcoField label="Implementation" value={tco.implementation_usd} />
+        <TcoField label="Total support (3y)" value={tco.total_support_usd} />
+        <TcoField
+          label="Escalation applied"
+          rendered={`${(tco.escalation_rate_applied * 100).toFixed(1)}%`}
+        />
+        <TcoField
+          label="3-year TCO"
+          value={tco.normalized_3yr_tco_usd}
+          emphasize
+        />
+      </dl>
+      {tco.notes.length > 0 && (
+        <ul className="mt-3 space-y-0.5">
+          {tco.notes.map((note, i) => (
+            <li key={i} className="text-[11px] text-slate-500 leading-snug">
+              · {note}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function TcoField({
+  label,
+  value,
+  rendered,
+  emphasize = false,
+}: {
+  label: string;
+  value?: number | null;
+  rendered?: string;
+  emphasize?: boolean;
+}) {
+  const display =
+    rendered ?? (value == null ? "—" : `$${value.toLocaleString()}`);
+  return (
+    <div>
+      <dt className="text-[10px] uppercase tracking-wide text-slate-500">
+        {label}
+      </dt>
+      <dd
+        className={cn(
+          "font-mono tabular-nums",
+          emphasize
+            ? "text-sm font-semibold text-indigo-700"
+            : "text-xs text-slate-900"
+        )}
+      >
+        {display}
+      </dd>
     </div>
   );
 }

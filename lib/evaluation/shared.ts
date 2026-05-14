@@ -1,3 +1,5 @@
+import { Type } from "@google/genai";
+
 import { generateWithFallback, type ModelId } from "@/lib/ai";
 import { getDocument, getRfp } from "@/lib/documents";
 import { getIngestion } from "@/lib/ingestion/dao";
@@ -94,6 +96,116 @@ export function recomputeWeightedScore(
   // criterion.weight is a percentage; weightedSum/weightTotal yields a 1-10 number.
   return Math.round((weightedSum / weightTotal) * 100) / 100;
 }
+
+/**
+ * JSON Schema for Gemini's responseSchema — shared output contract for all
+ * three category evaluators (technical / commercial / compliance). Mirrors
+ * categoryEvaluationResultSchema in types.ts; Zod remains the runtime guarantee.
+ */
+const citationSchemaJson = {
+  type: Type.OBJECT,
+  properties: {
+    page: { type: Type.INTEGER },
+    verbatim_excerpt: { type: Type.STRING },
+  },
+  required: ["page", "verbatim_excerpt"],
+};
+
+export const EVALUATION_RESPONSE_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    vendor_name: { type: Type.STRING },
+    category: {
+      type: Type.STRING,
+      enum: ["technical", "commercial", "compliance"],
+    },
+    criterion_scores: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          criterion_id: { type: Type.STRING },
+          criterion_name: { type: Type.STRING },
+          score: { type: Type.NUMBER },
+          rationale: { type: Type.STRING },
+          citations: {
+            type: Type.ARRAY,
+            items: citationSchemaJson,
+          },
+        },
+        required: [
+          "criterion_id",
+          "criterion_name",
+          "score",
+          "rationale",
+          "citations",
+        ],
+      },
+    },
+    weighted_category_score: { type: Type.NUMBER },
+    hard_requirement_checks: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          requirement_id: { type: Type.STRING },
+          requirement_name: { type: Type.STRING },
+          outcome: {
+            type: Type.STRING,
+            enum: ["pass", "fail", "unclear"],
+          },
+          rationale: { type: Type.STRING },
+          citation: {
+            type: Type.OBJECT,
+            nullable: true,
+            properties: {
+              page: { type: Type.INTEGER },
+              verbatim_excerpt: { type: Type.STRING },
+            },
+            required: ["page", "verbatim_excerpt"],
+          },
+        },
+        required: [
+          "requirement_id",
+          "requirement_name",
+          "outcome",
+          "rationale",
+          "citation",
+        ],
+      },
+    },
+    flags: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          severity: { type: Type.STRING, enum: ["low", "medium", "high"] },
+          summary: { type: Type.STRING },
+          citation: {
+            type: Type.OBJECT,
+            nullable: true,
+            properties: {
+              page: { type: Type.INTEGER },
+              verbatim_excerpt: { type: Type.STRING },
+            },
+            required: ["page", "verbatim_excerpt"],
+          },
+        },
+        required: ["severity", "summary", "citation"],
+      },
+    },
+    category_summary: { type: Type.STRING },
+  },
+  required: [
+    "vendor_name",
+    "category",
+    "criterion_scores",
+    "weighted_category_score",
+    "hard_requirement_checks",
+    "flags",
+    "category_summary",
+  ],
+};
 
 export interface GeminiEvaluationRun {
   result: CategoryEvaluationResult;
