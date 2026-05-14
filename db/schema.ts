@@ -39,3 +39,26 @@ export const ingestions = pgTable("ingestions", {
 
 export type IngestionRow = typeof ingestions.$inferSelect;
 export type NewIngestionRow = typeof ingestions.$inferInsert;
+
+/**
+ * One row per (vendor, category). category is "technical" | "commercial" |
+ * "compliance". Re-running an evaluation upserts on (vendor_id, category).
+ * result JSONB shape follows lib/evaluation/types.ts.
+ */
+export const evaluations = pgTable("evaluations", {
+  id: text("id").primaryKey(),
+  vendorId: text("vendor_id").notNull(),
+  category: text("category").notNull(),
+  status: text("status").notNull(), // "pending" | "running" | "complete" | "error"
+  model: text("model"),
+  inputTokens: integer("input_tokens"),
+  outputTokens: integer("output_tokens"),
+  latencyMs: integer("latency_ms"),
+  result: jsonb("result"),
+  error: text("error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type EvaluationRow = typeof evaluations.$inferSelect;
+export type NewEvaluationRow = typeof evaluations.$inferInsert;

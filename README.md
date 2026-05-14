@@ -51,6 +51,18 @@ Each ingestion is a single Gemini 2.5 Flash call using PDF input (`inlineData`) 
 - Endpoints: `GET /api/ingestions`, `GET /api/ingestions/[id]`, `POST /api/ingestions/[id]`
 - Schema types: `lib/ingestion/types.ts` (Zod schema is the runtime contract)
 
+### PR 5 — Technical Evaluator (complete)
+
+The first per-vendor scoring agent. For each vendor, the Technical Evaluator scores the rubric's technical criteria (EHR integration, ambient capture, note quality, language support, mobile/identity) on a 1–10 scale, checks the technical hard requirements (Epic integration, English+Spanish capture), surfaces technical gaps as flags, and computes a weighted technical score.
+
+- Agent: `lib/evaluation/technical.ts`, built on shared evaluator helpers in `lib/evaluation/shared.ts`
+- Inputs: RFP ingestion + bid ingestion + rubric technical category
+- The weighted category score is recomputed server-side as an integrity check — the agent's arithmetic is not trusted blindly
+- Page: `/evaluations` — one card per vendor, run the technical evaluation, inspect the scorecard with hard-requirement checks, criterion scores, citations, and flags
+- Persistence: `evaluations` table, one row per (vendor, category)
+- Endpoints: `GET /api/evaluations`, `GET|POST /api/evaluations/[vendorId]/[category]`
+- Commercial and Compliance evaluators (PRs 6–7) follow the same pattern
+
 ## Tech stack
 
 - **Framework:** Next.js 15 (App Router) on TypeScript strict mode
@@ -111,7 +123,7 @@ After the deploy, visit the production URL and confirm the system status card sh
 - [x] **PR 2 — Demo data + viewer** — RFP + 3 vendor bid PDFs
 - [x] **PR 3 — Rubric configurator** — categories, weights, hard requirements (Neon + Drizzle)
 - [x] **PR 4 — Ingestion agents** — RFP and bid parsing to structured JSON with citations
-- [ ] PR 5 — Technical Evaluator (per-vendor technical scoring with citations)
+- [x] **PR 5 — Technical Evaluator** — per-vendor technical scoring with citations
 - [ ] PR 6 — Commercial Evaluator (TCO normalization + commercial scoring)
 - [ ] PR 7 — Compliance Evaluator (certification + BAA verification)
 - [ ] PR 8 — Comparative dashboard (cross-vendor synthesis)
