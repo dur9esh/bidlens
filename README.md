@@ -72,6 +72,15 @@ The second per-vendor scoring agent. Scores the rubric's commercial criteria (3-
 - The TCO breakdown is stored in the evaluation result (`tco_breakdown` field) and displayed in the commercial scorecard
 - Same `evaluations` table, same output contract as the Technical Evaluator; `EVALUATION_RESPONSE_SCHEMA` extracted into `lib/evaluation/shared.ts` so both evaluators share it
 
+### PR 7 — Compliance Evaluator (complete)
+
+The third per-vendor scoring agent — and the last one in the per-vendor scoring layer. Scores the rubric's compliance criteria (HIPAA + BAA terms, SOC 2 + HITRUST status, data residency, model training data terms, audit + incident response), checks the five compliance hard requirements, and surfaces compliance risks as flags.
+
+- **Deterministic hard-requirement pre-checks** (`lib/evaluation/compliance-checks.ts`) inferred directly from the bid's typed ingestion enums (`baa_template_acceptance`, `soc2_type_ii_status`, `model_training_data_handling`, etc.). The agent uses these as the basis and refines with rationale + citation — code does the deterministic inference; the LLM owns the final judgment with evidence.
+- Agent: `lib/evaluation/compliance.ts`, reusing the shared evaluator scaffolding
+- Three places code now does deterministic work instead of the LLM: weighted-score recompute (PR 5), TCO normalization (PR 6), compliance hard-requirement pre-checks (PR 7). Same principle: code does deterministic math/inference; the LLM does judgment.
+- After PR 7, every vendor has scores in all three categories — PR 8 (cross-vendor synthesis) can begin
+
 ### PR 5.5 — AI fallback chain
 
 All Gemini calls go through `generateWithFallback()` in `lib/ai.ts`, which degrades gracefully on rate-limit (429) or transient server errors (5xx). Non-retryable errors (400 / 401 / 403, schema failures) surface immediately rather than burning the chain. Each ingestion and evaluation record stores the model that actually served it, so fallbacks are visible and attribution stays honest.
@@ -149,7 +158,7 @@ After the deploy, visit the production URL and confirm the system status card sh
 - [x] **PR 4 — Ingestion agents** — RFP and bid parsing to structured JSON with citations
 - [x] **PR 5 — Technical Evaluator** — per-vendor technical scoring with citations
 - [x] **PR 6 — Commercial Evaluator** — TCO normalization + commercial scoring
-- [ ] PR 7 — Compliance Evaluator (certification + BAA verification)
+- [x] **PR 7 — Compliance Evaluator** — certification + BAA verification (deterministic pre-checks + agent rationale)
 - [ ] PR 8 — Comparative dashboard (cross-vendor synthesis)
 - [ ] PR 9 — Risk register + Evaluation memo (Opus-driven synthesis)
 - [ ] PR 10 — Ask the agent + Audit trail (Q&A and defensibility)

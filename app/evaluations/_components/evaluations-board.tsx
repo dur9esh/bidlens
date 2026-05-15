@@ -52,7 +52,7 @@ const CATEGORIES: {
 }[] = [
   { id: "technical", label: "Technical", available: true },
   { id: "commercial", label: "Commercial", available: true },
-  { id: "compliance", label: "Compliance", available: false, comingIn: "PR 7" },
+  { id: "compliance", label: "Compliance", available: true },
 ];
 
 type EvalKey = `${string}:${EvaluationCategory}`;
@@ -190,6 +190,11 @@ export function EvaluationsBoard({
   const allCommercialComplete = bids.every(
     (b) => records[keyFor(b.id, "commercial")]?.status === "complete"
   );
+  const allComplianceComplete = bids.every(
+    (b) => records[keyFor(b.id, "compliance")]?.status === "complete"
+  );
+  const allCategoriesComplete =
+    allTechnicalComplete && allCommercialComplete && allComplianceComplete;
 
   return (
     <div className="flex-1">
@@ -236,18 +241,29 @@ export function EvaluationsBoard({
           </div>
         )}
 
-        {allTechnicalComplete && allCommercialComplete && bids.length > 0 && (
+        {allCategoriesComplete && bids.length > 0 && (
           <div className="rounded-lg border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-800">
-            Technical and Commercial scored for all vendors. Compliance
-            evaluation arrives in PR 7.
+            All vendors scored across all three categories. Cross-vendor
+            synthesis arrives in PR 8.
           </div>
         )}
-        {allTechnicalComplete && !allCommercialComplete && bids.length > 0 && (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-800">
-            All vendors scored on Technical. Commercial evaluation is now
-            available — click Evaluate on each vendor&apos;s Commercial section.
-          </div>
-        )}
+        {allTechnicalComplete &&
+          allCommercialComplete &&
+          !allComplianceComplete &&
+          bids.length > 0 && (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-800">
+              Technical and Commercial scored for all vendors. Run the
+              Compliance Evaluator on each to complete per-vendor scoring.
+            </div>
+          )}
+        {allTechnicalComplete &&
+          !allCommercialComplete &&
+          bids.length > 0 && (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-800">
+              All vendors scored on Technical. Commercial and Compliance
+              evaluations are now available — click Evaluate on each vendor.
+            </div>
+          )}
 
         <div className="space-y-6">
           {bids.map((bid) => (
