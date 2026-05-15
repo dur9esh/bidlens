@@ -7,6 +7,7 @@ import {
   type EvaluationCategory,
 } from "@/lib/evaluation/dao";
 import { evaluateCommercial } from "@/lib/evaluation/commercial";
+import { evaluateCompliance } from "@/lib/evaluation/compliance";
 import { evaluateTechnical } from "@/lib/evaluation/technical";
 
 export const runtime = "nodejs";
@@ -16,11 +17,6 @@ const VALID_CATEGORIES: EvaluationCategory[] = [
   "technical",
   "commercial",
   "compliance",
-];
-
-const IMPLEMENTED_CATEGORIES: EvaluationCategory[] = [
-  "technical",
-  "commercial",
 ];
 
 function isValidCategory(c: string): c is EvaluationCategory {
@@ -62,24 +58,18 @@ export async function POST(
     );
   }
 
-  // Compliance arrives in PR 7. Gate here BEFORE the "running" upsert so we
-  // never leave a stuck running row for an unimplemented category.
-  if (!IMPLEMENTED_CATEGORIES.includes(category)) {
-    return NextResponse.json(
-      {
-        error: `The ${category} evaluator is not implemented yet (arrives in PR 7).`,
-      },
-      { status: 501 }
-    );
-  }
-
   await upsertEvaluation({ vendorId, category, status: "running" });
 
   try {
-    const run =
-      category === "technical"
-        ? await evaluateTechnical(vendorId)
-        : await evaluateCommercial(vendorId);
+    let run;
+    if (category === "technical") {
+      run = await evaluateTechnical(vendorId);
+    } else if (category === "commercial") {
+      run = await evaluateCommercial(vendorId);
+    } else {
+      // category === "compliance" — guarded by isValidCategory above.
+      run = await evaluateCompliance(vendorId);
+    }
 
     const record = await upsertEvaluation({
       vendorId,

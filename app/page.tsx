@@ -94,7 +94,7 @@ const ROADMAP: RoadmapItem[] = [
     pr: 7,
     title: "Compliance Evaluator",
     description: "Certification + BAA verification",
-    done: false,
+    done: true,
   },
   {
     pr: 8,
