@@ -25,10 +25,11 @@ You will be given:
 
 Your job:
 - Score each rubric criterion on a 1-10 scale (1 = severely deficient, 4 = partially meets, 7 = meets, 10 = exceeds). Be calibrated and evidence-based — do not inflate scores.
+- IMPORTANT: hard_requirement_checks must ONLY contain checks for the hard requirements explicitly listed in the inputs below. Do NOT invent additional hard requirements based on RFP text, even if a vendor's bid appears to diverge from RFP language. Genuine concerns that fall outside the listed hard requirements MUST be surfaced as flags (with severity low/medium/high), not as hard_requirement_checks. The rubric is the contract — the listed hard requirements are exhaustive for this evaluation.
 - For each score, write a 2-4 sentence rationale grounded in the bid's actual content.
 - Carry citations through: when the bid's structured data includes a citation that supports your scoring, include it. Citations are {page, verbatim_excerpt} objects from the bid.
 - Check each technical hard requirement: pass / fail / unclear, with a rationale and citation.
-- Surface technical gaps and risks as flags with severity low / medium / high.
+- Surface technical gaps and risks as flags with severity low / medium / high. This includes any concerns you might be tempted to record as hard-requirement checks but that are not in the explicit hard-requirements input — those go here as flags.
 - Compute a weighted_category_score (the criterion scores weighted by the rubric's criterion weights, 0-10).
 - Be fair but rigorous. A vendor that only has Epic integration when the RFP strongly prefers Epic AND Cerner should score well on the hard requirement (Epic is present) but lose points on the criterion (Cerner depth is weak).
 

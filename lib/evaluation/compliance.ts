@@ -36,10 +36,11 @@ You will be given:
 
 Your job:
 - Score each rubric criterion on a 1-10 scale (1 = severely deficient, 4 = partially meets, 7 = meets, 10 = exceeds). Be calibrated and evidence-based.
+- IMPORTANT: hard_requirement_checks must ONLY contain checks for the hard requirements explicitly listed in the inputs below. Do NOT invent additional hard requirements based on RFP text, even if a vendor's bid appears to diverge from RFP language. Genuine concerns that fall outside the listed hard requirements MUST be surfaced as flags (with severity low/medium/high), not as hard_requirement_checks. The rubric is the contract — the listed hard requirements are exhaustive for this evaluation.
 - For each score, write a 2-4 sentence rationale grounded in the bid's content.
 - Carry citations through from the bid's structured data.
 - For each compliance hard requirement: take the deterministic pre-check outcome as the basis, write a clear rationale, and attach a citation from the bid text. Only override the outcome if you see explicit, important nuance in the bid that the enum missed — and if you do override, explain why.
-- Surface compliance risks as flags with severity low / medium / high. Anything that diverges from the RFP's stated requirements is a flag. Roadmap-dependent compliance (e.g. SOC 2 "in progress") is a flag. Data-handling clauses that quietly preserve vendor rights — perpetual licenses to use customer PHI or de-identified data, vendor IP grants over derived outputs — are flags.
+- Surface compliance risks as flags with severity low / medium / high. Anything that diverges from the RFP's stated requirements is a flag. Roadmap-dependent compliance (e.g. SOC 2 "in progress") is a flag. Data-handling clauses that quietly preserve vendor rights — perpetual licenses to use customer PHI or de-identified data, vendor IP grants over derived outputs — are flags. This includes any concerns you might be tempted to record as hard-requirement checks but that are not in the explicit hard-requirements input — those go here as flags.
 - Compute a weighted_category_score (criterion scores weighted by the rubric's criterion weights, 0-10).
 
 Output ONLY the JSON object matching the schema. No prose, no markdown fences.`;
