@@ -100,7 +100,7 @@ const ROADMAP: RoadmapItem[] = [
     pr: 8,
     title: "Comparative dashboard",
     description: "Cross-vendor synthesis",
-    done: false,
+    done: true,
   },
   {
     pr: 9,
@@ -275,6 +275,13 @@ export default function Home() {
               className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors"
             >
               Run evaluations
+              <ArrowRight className="size-4" />
+            </Link>
+            <Link
+              href="/compare"
+              className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors"
+            >
+              Compare vendors
               <ArrowRight className="size-4" />
             </Link>
           </div>
