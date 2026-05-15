@@ -62,3 +62,25 @@ export const evaluations = pgTable("evaluations", {
 
 export type EvaluationRow = typeof evaluations.$inferSelect;
 export type NewEvaluationRow = typeof evaluations.$inferInsert;
+
+/**
+ * Cross-vendor synthesis outputs. One row per kind
+ * ("comparative" | "memo" | "risk_register"); re-running upserts.
+ * result JSONB shape follows lib/synthesis/types.ts.
+ */
+export const syntheses = pgTable("syntheses", {
+  id: text("id").primaryKey(),
+  kind: text("kind").notNull(),
+  status: text("status").notNull(),
+  model: text("model"),
+  inputTokens: integer("input_tokens"),
+  outputTokens: integer("output_tokens"),
+  latencyMs: integer("latency_ms"),
+  result: jsonb("result"),
+  error: text("error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type SynthesisRow = typeof syntheses.$inferSelect;
+export type NewSynthesisRow = typeof syntheses.$inferInsert;

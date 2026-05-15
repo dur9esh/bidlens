@@ -81,6 +81,24 @@ The third per-vendor scoring agent — and the last one in the per-vendor scorin
 - Three places code now does deterministic work instead of the LLM: weighted-score recompute (PR 5), TCO normalization (PR 6), compliance hard-requirement pre-checks (PR 7). Same principle: code does deterministic math/inference; the LLM does judgment.
 - After PR 7, every vendor has scores in all three categories — PR 8 (cross-vendor synthesis) can begin
 
+### PR 8 — Comparative Dashboard (complete)
+
+The first cross-vendor synthesis agent. Reads all 9 per-vendor evaluations plus the 3 bid ingestions and produces:
+
+- Side-by-side scorecard summaries (overall weighted score, per-category sub-scores, hard-requirement failure status)
+- Sortable per-criterion comparison across vendors
+- Cross-vendor insights: common gaps, standout strengths, standout weaknesses, cross-vendor risks
+- Recommended ranking with rationale, with hard-requirement-failure caveats surfaced explicitly
+- Clarification questions to send back to specific vendors (with copy-to-clipboard)
+- Executive summary
+
+Uses the synthesis model chain (`pro → flash → flash-lite`) per the routing policy — highest reasoning for the lowest-volume, highest-stakes step.
+
+- Page: `/compare`
+- Agent: `lib/synthesis/comparative.ts` (single agent that sees everything, by deliberate design — synthesis is about connections, not parallel decomposition)
+- Pre-computed vendor score summaries (deterministic; agent's arithmetic is overridden server-side)
+- Persistence: `syntheses` table (one row per kind: `comparative` | `memo` | `risk_register`)
+
 ### PR 5.5 — AI fallback chain
 
 All Gemini calls go through `generateWithFallback()` in `lib/ai.ts`, which degrades gracefully on rate-limit (429) or transient server errors (5xx). Non-retryable errors (400 / 401 / 403, schema failures) surface immediately rather than burning the chain. Each ingestion and evaluation record stores the model that actually served it, so fallbacks are visible and attribution stays honest.
@@ -159,6 +177,6 @@ After the deploy, visit the production URL and confirm the system status card sh
 - [x] **PR 5 — Technical Evaluator** — per-vendor technical scoring with citations
 - [x] **PR 6 — Commercial Evaluator** — TCO normalization + commercial scoring
 - [x] **PR 7 — Compliance Evaluator** — certification + BAA verification (deterministic pre-checks + agent rationale)
-- [ ] PR 8 — Comparative dashboard (cross-vendor synthesis)
+- [x] **PR 8 — Comparative dashboard** — cross-vendor synthesis (`/compare`)
 - [ ] PR 9 — Risk register + Evaluation memo (Opus-driven synthesis)
 - [ ] PR 10 — Ask the agent + Audit trail (Q&A and defensibility)
