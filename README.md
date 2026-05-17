@@ -99,6 +99,15 @@ Uses the synthesis model chain (`pro → flash → flash-lite`) per the routing 
 - Pre-computed vendor score summaries (deterministic; agent's arithmetic is overridden server-side)
 - Persistence: `syntheses` table (one row per kind: `comparative` | `memo` | `risk_register`)
 
+### PR 9 — Evaluation Memo + Risk Register (complete)
+
+Two synthesis agents producing the deliverable artifacts procurement teams archive.
+
+- **Memo** (`lib/synthesis/memo.ts`) — long-form prose document at `/memo`. The artifact the VP of Procurement reads and signs. Includes executive summary, recommendation with caveats, per-vendor analysis, open questions, signatures block. Markdown export.
+- **Risk Register** (`lib/synthesis/risk-register.ts`) — structured risk table at `/risk-register`. Each risk has category, severity, likelihood, affected vendors, citations, recommended mitigation, and suggested owner team. Filterable by severity / category / vendor and CSV-exportable.
+
+Both use the synthesis model chain (`pro → flash → flash-lite`) for highest reasoning quality.
+
 ### PR 5.5 — AI fallback chain
 
 All Gemini calls go through `generateWithFallback()` in `lib/ai.ts`, which degrades gracefully on rate-limit (429) or transient server errors (5xx). Non-retryable errors (400 / 401 / 403, schema failures) surface immediately rather than burning the chain. Each ingestion and evaluation record stores the model that actually served it, so fallbacks are visible and attribution stays honest.
@@ -178,5 +187,5 @@ After the deploy, visit the production URL and confirm the system status card sh
 - [x] **PR 6 — Commercial Evaluator** — TCO normalization + commercial scoring
 - [x] **PR 7 — Compliance Evaluator** — certification + BAA verification (deterministic pre-checks + agent rationale)
 - [x] **PR 8 — Comparative dashboard** — cross-vendor synthesis (`/compare`)
-- [ ] PR 9 — Risk register + Evaluation memo (Opus-driven synthesis)
+- [x] **PR 9 — Evaluation memo + Risk register** — formal deliverable artifacts (`/memo`, `/risk-register`)
 - [ ] PR 10 — Ask the agent + Audit trail (Q&A and defensibility)

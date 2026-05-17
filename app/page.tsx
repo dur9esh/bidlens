@@ -105,8 +105,8 @@ const ROADMAP: RoadmapItem[] = [
   {
     pr: 9,
     title: "Risk register + Evaluation memo",
-    description: "Opus-driven synthesis",
-    done: false,
+    description: "Synthesis-chain artifacts for procurement + risk teams",
+    done: true,
   },
   {
     pr: 10,
@@ -282,6 +282,20 @@ export default function Home() {
               className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors"
             >
               Compare vendors
+              <ArrowRight className="size-4" />
+            </Link>
+            <Link
+              href="/memo"
+              className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors"
+            >
+              View memo
+              <ArrowRight className="size-4" />
+            </Link>
+            <Link
+              href="/risk-register"
+              className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors"
+            >
+              View risk register
               <ArrowRight className="size-4" />
             </Link>
           </div>
