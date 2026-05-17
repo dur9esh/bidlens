@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { logAuditEvent } from "@/lib/audit/log";
 import { getDocument } from "@/lib/documents";
 import {
   getEvaluation,
@@ -81,6 +82,17 @@ export async function POST(
       latencyMs: run.latencyMs,
       result: run.result,
     });
+    await logAuditEvent({
+      eventType: "evaluation.run",
+      resourceKind: "vendor",
+      resourceId: `${vendorId}:${category}`,
+      model: run.model,
+      inputTokens: run.inputTokens,
+      outputTokens: run.outputTokens,
+      latencyMs: run.latencyMs,
+      status: "complete",
+      metadata: { category, vendor_id: vendorId },
+    });
     return NextResponse.json(record);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
@@ -93,6 +105,13 @@ export async function POST(
       category,
       status: "error",
       error: message,
+    });
+    await logAuditEvent({
+      eventType: "evaluation.run",
+      resourceKind: "vendor",
+      resourceId: `${vendorId}:${category}`,
+      status: "error",
+      metadata: { category, vendor_id: vendorId, error_message: message },
     });
     return NextResponse.json(record, { status: 500 });
   }

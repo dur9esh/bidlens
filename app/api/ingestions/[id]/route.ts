@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { logAuditEvent } from "@/lib/audit/log";
 import { getDocument } from "@/lib/documents";
 import { getIngestion, upsertIngestion } from "@/lib/ingestion/dao";
 import { ingestBid } from "@/lib/ingestion/bid";
@@ -40,22 +41,11 @@ export async function POST(
   });
 
   try {
-    if (doc.kind === "rfp") {
-      const run = await ingestRfp(doc.filename);
-      const record = await upsertIngestion({
-        documentId: doc.id,
-        documentKind: doc.kind,
-        status: "complete",
-        model: run.model,
-        inputTokens: run.inputTokens,
-        outputTokens: run.outputTokens,
-        latencyMs: run.latencyMs,
-        result: run.result,
-      });
-      return NextResponse.json(record);
-    }
+    const run =
+      doc.kind === "rfp"
+        ? await ingestRfp(doc.filename)
+        : await ingestBid(doc.filename);
 
-    const run = await ingestBid(doc.filename);
     const record = await upsertIngestion({
       documentId: doc.id,
       documentKind: doc.kind,
@@ -66,6 +56,17 @@ export async function POST(
       latencyMs: run.latencyMs,
       result: run.result,
     });
+    await logAuditEvent({
+      eventType: "ingestion.run",
+      resourceKind: "document",
+      resourceId: doc.id,
+      model: run.model,
+      inputTokens: run.inputTokens,
+      outputTokens: run.outputTokens,
+      latencyMs: run.latencyMs,
+      status: "complete",
+      metadata: { document_kind: doc.kind, filename: doc.filename },
+    });
     return NextResponse.json(record);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
@@ -75,6 +76,17 @@ export async function POST(
       documentKind: doc.kind,
       status: "error",
       error: message,
+    });
+    await logAuditEvent({
+      eventType: "ingestion.run",
+      resourceKind: "document",
+      resourceId: doc.id,
+      status: "error",
+      metadata: {
+        document_kind: doc.kind,
+        filename: doc.filename,
+        error_message: message,
+      },
     });
     return NextResponse.json(record, { status: 500 });
   }
