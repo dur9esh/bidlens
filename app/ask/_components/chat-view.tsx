@@ -1,10 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
-  ArrowLeft,
   CheckCircle2,
   Loader2,
   RefreshCw,
@@ -13,6 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { PageHeader } from "@/app/_components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { QaTurnRecord } from "@/lib/qa/dao";
@@ -150,29 +149,17 @@ export function ChatView() {
 
   return (
     <div className="flex-1">
-      <main className="max-w-3xl mx-auto px-6 py-12 space-y-6">
-        <div className="space-y-3">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-indigo-600 transition-colors"
-          >
-            <ArrowLeft className="size-4" />
-            BidLens
-          </Link>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-            Ask the agent
-          </h1>
-          <p className="text-slate-600">
-            Open-ended Q&amp;A grounded in the full BidLens corpus — RFP,
-            vendor bids, evaluations, comparative analysis, memo, and risk
-            register. Every answer is cited to its source.
-          </p>
-        </div>
+      <main className="max-w-3xl mx-auto px-6 pb-12 space-y-6">
+        <PageHeader
+          eyebrow="Observability · Interactive"
+          title="Ask the agent"
+          subtitle="Open-ended Q&A grounded in the full BidLens corpus — RFP, vendor bids, evaluations, memo, and risk register. Every answer is cited to its source."
+        />
 
         {turns.length === 0 && (
           <Card className="shadow-sm border-slate-200/80">
             <CardContent className="pt-6 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <div className="flex items-center gap-2 font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
                 <Sparkles className="size-4 text-indigo-500" />
                 Suggested questions
               </div>

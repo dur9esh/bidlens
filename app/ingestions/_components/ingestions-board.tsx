@@ -1,10 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   AlertCircle,
-  ArrowLeft,
   CheckCircle,
   ChevronDown,
   ChevronRight,
@@ -14,6 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { PageHeader } from "@/app/_components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Collapsible,
@@ -122,26 +121,12 @@ export function IngestionsBoard({
 
   return (
     <div className="flex-1">
-      <main className="max-w-5xl mx-auto px-6 py-16 space-y-10">
-        <div className="space-y-3">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-indigo-600 transition-colors"
-          >
-            <ArrowLeft className="size-4" />
-            BidLens
-          </Link>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-            Ingestions
-          </h1>
-          <p className="text-slate-600 max-w-2xl">
-            BidLens reads each document with Gemini and extracts structured
-            data with citations back to source text. Calls go through a
-            fallback chain (flash-lite → flash → pro); the model that
-            actually served each ingestion is shown in the metadata line.
-            Re-running an ingestion replaces the prior result.
-          </p>
-        </div>
+      <main className="max-w-5xl mx-auto px-6 pb-16 space-y-10">
+        <PageHeader
+          eyebrow="Evaluation · Structured Extraction"
+          title="Ingestions"
+          subtitle="BidLens reads each document with Gemini and extracts structured data with citations back to source text. Calls route through a fallback chain (flash-lite → flash → pro); the model that actually served each run is shown in the metadata line. Re-running replaces the prior result."
+        />
 
         {allComplete && (
           <div className="rounded-lg border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-800">

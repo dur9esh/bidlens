@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowLeft, RotateCcw, Save } from "lucide-react";
+import { RotateCcw, Save } from "lucide-react";
+
+import { PageHeader } from "@/app/_components/page-header";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -139,22 +140,12 @@ export function RubricEditor({ initialRubric }: { initialRubric: Rubric }) {
 
   return (
     <div className="flex-1">
-      <main className="max-w-4xl mx-auto px-6 py-16 space-y-10">
-        <div className="space-y-3">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-indigo-600 transition-colors"
-          >
-            <ArrowLeft className="size-4" />
-            BidLens
-          </Link>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-            Rubric
-          </h1>
-          <p className="text-slate-600">
-            Configure how BidLens evaluates vendor bids against the RFP.
-          </p>
-        </div>
+      <main className="max-w-4xl mx-auto px-6 pb-16 space-y-10">
+        <PageHeader
+          eyebrow="Inputs · Evaluation Contract"
+          title="Rubric"
+          subtitle="Configurable weights, criteria, and pass/fail gates that govern every evaluation."
+        />
 
         <Card className="shadow-sm border-slate-200/80">
           <CardContent className="pt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -196,7 +187,7 @@ export function RubricEditor({ initialRubric }: { initialRubric: Rubric }) {
         />
 
         <section className="space-y-4">
-          <h2 className="text-sm font-medium uppercase tracking-wider text-slate-500">
+          <h2 className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
             Categories
           </h2>
           <div className="space-y-4">
@@ -227,7 +218,7 @@ export function RubricEditor({ initialRubric }: { initialRubric: Rubric }) {
         </section>
 
         <section className="space-y-4">
-          <h2 className="text-sm font-medium uppercase tracking-wider text-slate-500">
+          <h2 className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
             Hard requirements
           </h2>
           <Card className="shadow-sm border-slate-200/80">
@@ -270,7 +261,7 @@ export function RubricEditor({ initialRubric }: { initialRubric: Rubric }) {
         </section>
 
         <section className="space-y-4">
-          <h2 className="text-sm font-medium uppercase tracking-wider text-slate-500">
+          <h2 className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
             Scoring scale
           </h2>
           <Card className="shadow-sm border-slate-200/80">
