@@ -1,16 +1,26 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, IBM_Plex_Sans, Instrument_Serif } from "next/font/google";
 
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const instrumentSerif = Instrument_Serif({
+  weight: ["400"],
+  style: ["normal", "italic"],
   subsets: ["latin"],
+  variable: "--font-display-serif",
+  display: "swap",
+});
+
+const ibmPlexSans = IBM_Plex_Sans({
+  weight: ["400", "500", "600", "700"],
+  subsets: ["latin"],
+  variable: "--font-body-sans",
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+  variable: "--font-body-mono",
   subsets: ["latin"],
 });
 
@@ -28,9 +38,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${instrumentSerif.variable} ${ibmPlexSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900">
+      <body className="min-h-full flex flex-col font-sans bg-slate-50 text-slate-900">
         {children}
         <Toaster />
       </body>
