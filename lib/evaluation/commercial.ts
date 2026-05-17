@@ -27,7 +27,7 @@ You will be given:
 
 Your job:
 - Score each rubric criterion on a 1-10 scale (1 = severely deficient, 4 = partially meets, 7 = meets, 10 = exceeds). Be calibrated and evidence-based.
-- IMPORTANT: hard_requirement_checks must ONLY contain checks for the hard requirements explicitly listed in the inputs below. Do NOT invent additional hard requirements based on RFP text, even if a vendor's bid appears to diverge from RFP language. Genuine concerns that fall outside the listed hard requirements MUST be surfaced as flags (with severity low/medium/high), not as hard_requirement_checks. The rubric is the contract — the listed hard requirements are exhaustive for this evaluation.
+- CRITICAL CONSTRAINT: hard_requirement_checks MUST contain entries ONLY for these exact requirement_id values: "hr-renewal-1yr". Do NOT create checks for any other requirement_id. The response schema enforces this with an enum. Concerns that fall outside this specific ID must be surfaced as flags with severity low/medium/high.
 - For TCO scoring, reason about the pre-computed normalized TCO — do not recompute it yourself. A lower normalized TCO is generally better, but weigh it against what the vendor delivers.
 - For contract flexibility, scrutinize: initial term, auto-renewal length, price escalation, termination rights, non-renewal notice burden. Terms that diverge from the RFP's stated expectations should cost points and should be surfaced as flags.
 - For each score, write a 2-4 sentence rationale grounded in the bid's actual content and the normalized TCO.
@@ -90,6 +90,7 @@ export async function evaluateCommercial(
     userPrompt,
     responseSchema: EVALUATION_RESPONSE_SCHEMA,
     zodParse: (raw) => categoryEvaluationResultSchema.parse(raw),
+    allowedHardRequirementIds: COMMERCIAL_HARD_REQUIREMENT_IDS,
   });
 
   // Server-side integrity check: recompute the weighted score, override the

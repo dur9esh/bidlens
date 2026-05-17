@@ -25,7 +25,7 @@ You will be given:
 
 Your job:
 - Score each rubric criterion on a 1-10 scale (1 = severely deficient, 4 = partially meets, 7 = meets, 10 = exceeds). Be calibrated and evidence-based — do not inflate scores.
-- IMPORTANT: hard_requirement_checks must ONLY contain checks for the hard requirements explicitly listed in the inputs below. Do NOT invent additional hard requirements based on RFP text, even if a vendor's bid appears to diverge from RFP language. Genuine concerns that fall outside the listed hard requirements MUST be surfaced as flags (with severity low/medium/high), not as hard_requirement_checks. The rubric is the contract — the listed hard requirements are exhaustive for this evaluation.
+- CRITICAL CONSTRAINT: hard_requirement_checks MUST contain entries ONLY for these exact requirement_id values, drawn from the rubric: "hr-epic", "hr-en-es-capture". Do NOT create checks for any other requirement_id. The response schema enforces this with an enum. Concerns that fall outside these specific IDs must be surfaced as flags with severity low/medium/high.
 - For each score, write a 2-4 sentence rationale grounded in the bid's actual content.
 - Carry citations through: when the bid's structured data includes a citation that supports your scoring, include it. Citations are {page, verbatim_excerpt} objects from the bid.
 - Check each technical hard requirement: pass / fail / unclear, with a rationale and citation.
@@ -78,6 +78,7 @@ export async function evaluateTechnical(
     userPrompt,
     responseSchema: EVALUATION_RESPONSE_SCHEMA,
     zodParse: (raw) => categoryEvaluationResultSchema.parse(raw),
+    allowedHardRequirementIds: TECHNICAL_HARD_REQUIREMENT_IDS,
   });
 
   // Server-side integrity check: recompute the weighted score, override the

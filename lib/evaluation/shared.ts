@@ -214,26 +214,63 @@ export interface GeminiEvaluationRun {
   inputTokens: number;
   outputTokens: number;
   latencyMs: number;
+  /** IDs the model produced but were dropped by the post-process filter. */
+  dropped_invalid_requirement_ids: string[];
 }
 
 /**
  * Shared Gemini call for category evaluators. Goes through the fallback chain
- * in lib/ai.ts. The caller builds the prompts and passes the Zod parser.
+ * in lib/ai.ts. Enforces the rubric-bounded hard-requirement constraint THREE
+ * ways:
+ *   1. The system prompt (written by each evaluator) says it.
+ *   2. If `allowedHardRequirementIds` is provided, the response schema's
+ *      `requirement_id` field is narrowed to an enum of those IDs.
+ *   3. After parsing, any `hard_requirement_check` whose `requirement_id`
+ *      isn't in the allowed list is dropped from the result.
+ *
+ * Defense in depth: prompt + schema + code all enforce the same rule, so the
+ * agent literally cannot produce out-of-rubric hard requirements.
  */
 export async function runEvaluationAgent(args: {
   systemPrompt: string;
   userPrompt: string;
   responseSchema: object;
   zodParse: (raw: unknown) => CategoryEvaluationResult;
+  allowedHardRequirementIds?: string[];
 }): Promise<GeminiEvaluationRun> {
   const startedAt = Date.now();
+
+  // Narrow the response schema's requirement_id to an enum of the allowed IDs
+  // when provided. Deep clone first — don't mutate the caller's constant.
+  let effectiveSchema: object = args.responseSchema;
+  if (
+    args.allowedHardRequirementIds &&
+    args.allowedHardRequirementIds.length > 0
+  ) {
+    const cloned = JSON.parse(JSON.stringify(args.responseSchema));
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const schemaAny = cloned as any;
+      schemaAny.properties.hard_requirement_checks.items.properties.requirement_id =
+        {
+          type: "string",
+          enum: args.allowedHardRequirementIds,
+        };
+    } catch (e) {
+      console.warn(
+        "[runEvaluationAgent] Could not inject enum into responseSchema:",
+        e
+      );
+    }
+    effectiveSchema = cloned;
+  }
 
   const fb = await generateWithFallback("evaluation", {
     contents: [{ role: "user", parts: [{ text: args.userPrompt }] }],
     config: {
       systemInstruction: args.systemPrompt,
       responseMimeType: "application/json",
-      responseSchema: args.responseSchema,
+      responseSchema: effectiveSchema,
       maxOutputTokens: 32768,
       thinkingConfig: { thinkingBudget: 4096 },
     },
@@ -260,11 +297,35 @@ export async function runEvaluationAgent(args: {
 
   const result = args.zodParse(parsedJson);
 
+  // Post-process safety net: drop any hard_requirement_checks whose ID is
+  // outside the allowed list, even if the model bypassed the schema enum.
+  const dropped: string[] = [];
+  if (
+    args.allowedHardRequirementIds &&
+    args.allowedHardRequirementIds.length > 0
+  ) {
+    const allowed = new Set(args.allowedHardRequirementIds);
+    const before = result.hard_requirement_checks.length;
+    result.hard_requirement_checks = result.hard_requirement_checks.filter(
+      (chk) => {
+        if (allowed.has(chk.requirement_id)) return true;
+        dropped.push(chk.requirement_id);
+        return false;
+      }
+    );
+    if (dropped.length > 0) {
+      console.warn(
+        `[runEvaluationAgent] Dropped ${dropped.length} out-of-rubric hard requirement checks: ${dropped.join(", ")} (kept ${result.hard_requirement_checks.length}/${before})`
+      );
+    }
+  }
+
   return {
     result,
     model: fb.modelUsed,
     inputTokens: fb.inputTokens,
     outputTokens: fb.outputTokens,
     latencyMs: Date.now() - startedAt,
+    dropped_invalid_requirement_ids: dropped,
   };
 }
