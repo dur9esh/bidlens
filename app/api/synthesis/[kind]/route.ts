@@ -6,6 +6,8 @@ import {
   upsertSynthesis,
   type SynthesisKind,
 } from "@/lib/synthesis/dao";
+import { generateEvaluationMemo } from "@/lib/synthesis/memo";
+import { generateRiskRegister } from "@/lib/synthesis/risk-register";
 
 export const runtime = "nodejs";
 export const maxDuration = 180;
@@ -27,10 +29,7 @@ export async function GET(
   try {
     const { kind } = await params;
     if (!isValidKind(kind)) {
-      return NextResponse.json(
-        { error: "Invalid kind" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid kind" }, { status: 400 });
     }
     const record = await getSynthesis(kind);
     return NextResponse.json(record);
@@ -49,19 +48,19 @@ export async function POST(
     return NextResponse.json({ error: "Invalid kind" }, { status: 400 });
   }
 
-  // Memo and risk_register arrive in PR 9. Gate BEFORE the "running" upsert
-  // so we never leave a stuck running row for an unimplemented kind.
-  if (kind !== "comparative") {
-    return NextResponse.json(
-      { error: `${kind} synthesis arrives in PR 9.` },
-      { status: 501 }
-    );
-  }
-
   await upsertSynthesis({ kind, status: "running" });
 
   try {
-    const run = await runComparativeSynthesis();
+    let run;
+    if (kind === "comparative") {
+      run = await runComparativeSynthesis();
+    } else if (kind === "memo") {
+      run = await generateEvaluationMemo();
+    } else {
+      // kind === "risk_register" — guarded by isValidKind above.
+      run = await generateRiskRegister();
+    }
+
     const record = await upsertSynthesis({
       kind,
       status: "complete",
@@ -74,7 +73,7 @@ export async function POST(
     return NextResponse.json(record);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    console.error(`Comparative synthesis failed:`, err);
+    console.error(`${kind} synthesis failed:`, err);
     const record = await upsertSynthesis({
       kind,
       status: "error",
