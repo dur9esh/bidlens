@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import {
   AlertCircle,
   AlertTriangle,
-  ArrowLeft,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -17,6 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { PageHeader } from "@/app/_components/page-header";
 import {
   Card,
   CardContent,
@@ -198,24 +198,12 @@ export function EvaluationsBoard({
 
   return (
     <div className="flex-1">
-      <main className="max-w-5xl mx-auto px-6 py-16 space-y-10">
-        <div className="space-y-3">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-indigo-600 transition-colors"
-          >
-            <ArrowLeft className="size-4" />
-            BidLens
-          </Link>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-            Evaluations
-          </h1>
-          <p className="text-slate-600 max-w-2xl">
-            BidLens scores each vendor against the rubric, one category at a
-            time. Each category is a specialized agent. PR 5 ships the
-            Technical Evaluator; Commercial and Compliance follow.
-          </p>
-        </div>
+      <main className="max-w-5xl mx-auto px-6 pb-16 space-y-10">
+        <PageHeader
+          eyebrow="Evaluation · Per-Vendor Scoring"
+          title="Evaluations"
+          subtitle="Three specialized agents score each vendor against the rubric — technical, commercial, compliance — with rationales and citations."
+        />
 
         {missingIngestions.length > 0 && (
           <div className="rounded-lg border border-amber-200 bg-amber-50/70 px-4 py-3 text-sm text-amber-900 flex items-start gap-3">
@@ -295,7 +283,7 @@ function VendorCard({
   return (
     <Card className="shadow-sm border-slate-200/80">
       <CardHeader>
-        <CardTitle className="text-slate-900 text-xl">
+        <CardTitle className="font-serif text-slate-900 text-2xl">
           {vendor.vendor ?? vendor.title}
         </CardTitle>
         <p className="text-xs text-slate-500">{vendor.subtitle}</p>
@@ -440,7 +428,7 @@ function Scorecard({
       {result.tco_breakdown && <TcoPanel tco={result.tco_breakdown} />}
 
       <section>
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+        <h3 className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase mb-2">
           Hard requirement checks
         </h3>
         <div className="space-y-2">
@@ -451,7 +439,7 @@ function Scorecard({
       </section>
 
       <section>
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+        <h3 className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase mb-2">
           Criterion scores
         </h3>
         <div className="space-y-3">
@@ -483,7 +471,7 @@ function Scorecard({
 
       {result.flags.length > 0 && (
         <section>
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+          <h3 className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase mb-2">
             Flags
           </h3>
           <div className="space-y-2">
@@ -495,7 +483,7 @@ function Scorecard({
       )}
 
       <section className="rounded-md bg-white border border-slate-200 px-3 py-2.5">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">
+        <h3 className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase mb-1">
           Category summary
         </h3>
         <p className="text-sm text-slate-800 leading-relaxed">
@@ -580,7 +568,7 @@ function TcoPanel({ tco }: { tco: TcoBreakdownSchema }) {
   return (
     <section className="rounded-md bg-white border border-slate-200 p-3">
       <div className="flex items-baseline justify-between gap-3 mb-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <h3 className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
           Normalized 3-year TCO
         </h3>
         <span className="text-[10px] text-slate-400">

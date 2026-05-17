@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import {
   AlertCircle,
   AlertTriangle,
-  ArrowLeft,
   ArrowUpDown,
   CheckCircle2,
   Copy,
@@ -18,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { PageHeader } from "@/app/_components/page-header";
 import {
   Card,
   CardContent,
@@ -171,25 +171,12 @@ export function ComparativeDashboard({
 
   return (
     <div className="flex-1">
-      <main className="max-w-6xl mx-auto px-6 py-12 space-y-8">
-        <div className="space-y-3">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-indigo-600 transition-colors"
-          >
-            <ArrowLeft className="size-4" />
-            BidLens
-          </Link>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-            Comparative Analysis
-          </h1>
-          <p className="text-slate-600 max-w-3xl">
-            Cross-vendor synthesis powered by the highest-reasoning model in
-            the routing policy. The synthesis agent reads all 9 evaluations
-            plus the underlying bid ingestions and surfaces patterns no single
-            per-vendor evaluator could.
-          </p>
-        </div>
+      <main className="max-w-6xl mx-auto px-6 pb-12 space-y-8">
+        <PageHeader
+          eyebrow="Evaluation · Cross-Vendor Synthesis"
+          title="Comparative Analysis"
+          subtitle="One synthesis agent reads all nine evaluations plus the underlying bid ingestions and surfaces patterns no single per-vendor evaluator could."
+        />
 
         {!hasPrereqs && (
           <div className="rounded-lg border border-amber-200 bg-amber-50/70 px-4 py-3 text-sm text-amber-900 flex items-start gap-3">
@@ -350,7 +337,7 @@ function VendorScorecardSummary({
 }) {
   return (
     <section className="space-y-3">
-      <h2 className="text-sm font-medium uppercase tracking-wider text-slate-500">
+      <h2 className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
         Scorecard
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -377,13 +364,13 @@ function VendorScorecardSummary({
                 </span>
               )}
               <CardHeader>
-                <CardTitle className="text-slate-900 text-lg">
+                <CardTitle className="font-serif text-slate-900 text-xl">
                   {s.vendor_name}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <span className="text-xs uppercase tracking-wide text-slate-500">
+                  <span className="font-sans text-[10px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
                     Overall
                   </span>
                   <div className="mt-1">
@@ -420,7 +407,7 @@ function SubScore({
 }) {
   return (
     <div className="text-center">
-      <div className="text-[10px] uppercase tracking-wide text-slate-500">
+      <div className="font-sans text-[10px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
         {label}
       </div>
       <div
@@ -594,7 +581,7 @@ function CriterionComparisonTable({
 
   return (
     <section className="space-y-3">
-      <h2 className="text-sm font-medium uppercase tracking-wider text-slate-500">
+      <h2 className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
         Side-by-side criterion comparison
       </h2>
       <Card className="shadow-sm border-slate-200/80 overflow-hidden">
@@ -761,7 +748,7 @@ function InsightsPanel({
 
   return (
     <section className="space-y-3">
-      <h2 className="text-sm font-medium uppercase tracking-wider text-slate-500">
+      <h2 className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
         Cross-vendor insights
       </h2>
       <Card className="shadow-sm border-slate-200/80">
@@ -914,7 +901,7 @@ function ClarificationsCard({
 
   return (
     <section className="space-y-3">
-      <h2 className="text-sm font-medium uppercase tracking-wider text-slate-500">
+      <h2 className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
         Questions to send to vendors
       </h2>
       <Card className="shadow-sm border-slate-200/80">
@@ -983,7 +970,7 @@ function CopyButton({ text }: { text: string }) {
 function ExecutiveSummaryCard({ summary }: { summary: string }) {
   return (
     <section className="space-y-3">
-      <h2 className="text-sm font-medium uppercase tracking-wider text-slate-500">
+      <h2 className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
         Executive summary
       </h2>
       <Card className="shadow-sm border-slate-200/80 border-l-4 border-l-indigo-600 bg-indigo-50/30">

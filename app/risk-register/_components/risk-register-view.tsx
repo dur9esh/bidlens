@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import {
   AlertCircle,
   AlertTriangle,
-  ArrowLeft,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -16,6 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { PageHeader } from "@/app/_components/page-header";
 import {
   Card,
   CardContent,
@@ -139,25 +139,12 @@ export function RiskRegisterView({
 
   return (
     <div className="flex-1">
-      <main className="max-w-6xl mx-auto px-6 py-12 space-y-8">
-        <div className="space-y-3">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-indigo-600 transition-colors"
-          >
-            <ArrowLeft className="size-4" />
-            BidLens
-          </Link>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-            Risk Register
-          </h1>
-          <p className="text-slate-600 max-w-3xl">
-            Structured risks across the vendor selection, each with severity,
-            likelihood, citation, and recommended mitigation. The artifact
-            procurement, legal, and risk teams maintain alongside the
-            evaluation.
-          </p>
-        </div>
+      <main className="max-w-6xl mx-auto px-6 pb-12 space-y-8">
+        <PageHeader
+          eyebrow="Artifacts · Structured Risks"
+          title="Risk Register"
+          subtitle="Structured risks across the vendor selection, each with severity, likelihood, citation, and recommended mitigation."
+        />
 
         {!ready && (
           <div className="rounded-lg border border-amber-200 bg-amber-50/70 px-4 py-3 text-sm text-amber-900 flex items-start gap-3">
@@ -388,7 +375,7 @@ function RegisterTable({ register }: { register: RiskRegister }) {
     <>
       <Card className="shadow-sm border-slate-200/80">
         <CardContent className="pt-6 space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <p className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
             Summary
           </p>
           <p className="text-sm text-slate-800 leading-relaxed">
@@ -543,7 +530,7 @@ function RiskRow({ risk }: { risk: RiskItem }) {
           <td colSpan={7} className="px-4 py-3">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">
+                <p className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase mb-1">
                   Description
                 </p>
                 <p className="text-slate-800 leading-relaxed">
@@ -551,7 +538,7 @@ function RiskRow({ risk }: { risk: RiskItem }) {
                 </p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">
+                <p className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase mb-1">
                   Recommended mitigation
                 </p>
                 <p className="text-slate-800 leading-relaxed">
@@ -561,7 +548,7 @@ function RiskRow({ risk }: { risk: RiskItem }) {
             </div>
             {risk.citations.length > 0 && (
               <div className="mt-3">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                <p className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase mb-1.5">
                   Citations
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -587,7 +574,7 @@ function FilterGroup({
 }) {
   return (
     <div className="flex flex-wrap items-baseline gap-2">
-      <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 mr-1">
+      <span className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase mr-1">
         {label}:
       </span>
       {children}

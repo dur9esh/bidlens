@@ -1,10 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   AlertCircle,
-  ArrowLeft,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -13,6 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { PageHeader } from "@/app/_components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { AuditEventRecord } from "@/lib/audit/dao";
@@ -118,24 +117,12 @@ export function AuditView({
 
   return (
     <div className="flex-1">
-      <main className="max-w-5xl mx-auto px-6 py-12 space-y-6">
-        <div className="space-y-3">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-indigo-600 transition-colors"
-          >
-            <ArrowLeft className="size-4" />
-            BidLens
-          </Link>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-            Audit Trail
-          </h1>
-          <p className="text-slate-600 max-w-3xl">
-            Every agent action and state change, in chronological order. The
-            defensibility surface — how a compliance auditor reconstructs the
-            decision.
-          </p>
-        </div>
+      <main className="max-w-5xl mx-auto px-6 pb-12 space-y-6">
+        <PageHeader
+          eyebrow="Observability · Defensibility"
+          title="Audit Trail"
+          subtitle="Every agent action and state change, in chronological order. The defensibility surface — how a compliance auditor reconstructs the decision."
+        />
 
         <Card className="shadow-sm border-slate-200/80">
           <CardContent className="pt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -343,7 +330,7 @@ function EventRow({ event }: { event: AuditEventRecord }) {
         <tr className="border-t border-slate-100 bg-slate-50/40">
           <td colSpan={9} className="px-4 py-3">
             <div className="space-y-1">
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <p className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
                 Metadata
               </p>
               <pre className="font-mono text-xs leading-relaxed bg-white border border-slate-200 p-3 rounded overflow-auto">
@@ -385,7 +372,7 @@ function FilterGroup({
 }) {
   return (
     <div className="flex flex-wrap items-baseline gap-2">
-      <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 mr-1">
+      <span className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase mr-1">
         {label}:
       </span>
       {children}

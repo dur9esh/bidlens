@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Calendar, FileText } from "lucide-react";
+import { ArrowRight, Calendar, FileText } from "lucide-react";
 
 import {
   Card,
@@ -8,6 +8,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getBids, getRfp, type DemoDocument } from "@/lib/documents";
+
+import { PageHeader } from "../_components/page-header";
 
 export const metadata = {
   title: "Documents — BidLens",
@@ -21,33 +23,22 @@ export default function DocumentsPage() {
 
   return (
     <div className="flex-1">
-      <main className="max-w-4xl mx-auto px-6 py-16 space-y-12">
-        <div className="space-y-3">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-indigo-600 transition-colors"
-          >
-            <ArrowLeft className="size-4" />
-            BidLens
-          </Link>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-            Documents
-          </h1>
-          <p className="text-slate-600">
-            The healthcare procurement scenario BidLens evaluates: one RFP
-            and three vendor responses.
-          </p>
-        </div>
+      <main className="max-w-4xl mx-auto px-6 space-y-12">
+        <PageHeader
+          eyebrow="Inputs · Source of Truth"
+          title="Documents"
+          subtitle="The RFP and three vendor bids. Every BidLens claim traces back to one of these."
+        />
 
         <section className="space-y-4">
-          <h2 className="text-sm font-medium uppercase tracking-wider text-slate-500">
+          <h2 className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
             Request for Proposal
           </h2>
           <RfpCard doc={rfp} />
         </section>
 
-        <section className="space-y-4">
-          <h2 className="text-sm font-medium uppercase tracking-wider text-slate-500">
+        <section className="space-y-4 pb-16">
+          <h2 className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
             Vendor bids
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -68,7 +59,7 @@ function RfpCard({ doc }: { doc: DemoDocument }) {
         <div className="flex items-start gap-3">
           <FileText className="size-5 mt-0.5 text-indigo-600 shrink-0" />
           <div className="space-y-1 min-w-0">
-            <CardTitle className="text-slate-900 text-lg leading-snug">
+            <CardTitle className="font-serif text-slate-900 text-xl leading-snug">
               {doc.title}
             </CardTitle>
             <p className="text-sm text-slate-600">{doc.subtitle}</p>
@@ -93,7 +84,7 @@ function BidCard({ doc }: { doc: DemoDocument }) {
         <div className="flex items-start gap-3">
           <FileText className="size-5 mt-0.5 text-slate-400 shrink-0" />
           <div className="space-y-1 min-w-0">
-            <CardTitle className="text-slate-900 leading-snug">
+            <CardTitle className="font-serif text-slate-900 text-lg leading-snug">
               {doc.vendor}
             </CardTitle>
             <p className="text-xs text-slate-500">{doc.subtitle}</p>
