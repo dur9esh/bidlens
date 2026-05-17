@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+
+import { logAuditEvent } from "@/lib/audit/log";
 import { getDefaultRubric, updateRubricContent } from "@/lib/rubric/dao";
 import type { RubricContent } from "@/lib/rubric/types";
 
@@ -24,6 +26,13 @@ export async function PUT(req: NextRequest) {
       );
     }
     const updated = await updateRubricContent(body.id, body.content);
+    await logAuditEvent({
+      eventType: "rubric.update",
+      resourceKind: "rubric",
+      resourceId: body.id,
+      status: "complete",
+      metadata: { rubric_name: updated.name },
+    });
     return NextResponse.json(updated);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";

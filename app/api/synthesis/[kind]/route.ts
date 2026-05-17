@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { logAuditEvent } from "@/lib/audit/log";
 import { runComparativeSynthesis } from "@/lib/synthesis/comparative";
 import {
   getSynthesis,
@@ -70,6 +71,17 @@ export async function POST(
       latencyMs: run.latencyMs,
       result: run.result,
     });
+    await logAuditEvent({
+      eventType: "synthesis.run",
+      resourceKind: "synthesis",
+      resourceId: kind,
+      model: run.model,
+      inputTokens: run.inputTokens,
+      outputTokens: run.outputTokens,
+      latencyMs: run.latencyMs,
+      status: "complete",
+      metadata: { kind },
+    });
     return NextResponse.json(record);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
@@ -78,6 +90,13 @@ export async function POST(
       kind,
       status: "error",
       error: message,
+    });
+    await logAuditEvent({
+      eventType: "synthesis.run",
+      resourceKind: "synthesis",
+      resourceId: kind,
+      status: "error",
+      metadata: { kind, error_message: message },
     });
     return NextResponse.json(record, { status: 500 });
   }

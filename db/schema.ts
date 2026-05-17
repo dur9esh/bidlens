@@ -84,3 +84,49 @@ export const syntheses = pgTable("syntheses", {
 
 export type SynthesisRow = typeof syntheses.$inferSelect;
 export type NewSynthesisRow = typeof syntheses.$inferInsert;
+
+/**
+ * One row per Q&A turn. Grouped by sessionId (per-visit conversation).
+ * citations is JSONB matching lib/qa/types.ts QaAnswerCitation[].
+ */
+export const qaTurns = pgTable("qa_turns", {
+  id: text("id").primaryKey(),
+  sessionId: text("session_id").notNull(),
+  question: text("question").notNull(),
+  answer: text("answer"),
+  citations: jsonb("citations"),
+  status: text("status").notNull(), // "pending" | "running" | "complete" | "error"
+  model: text("model"),
+  inputTokens: integer("input_tokens"),
+  outputTokens: integer("output_tokens"),
+  latencyMs: integer("latency_ms"),
+  error: text("error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type QaTurnRow = typeof qaTurns.$inferSelect;
+export type NewQaTurnRow = typeof qaTurns.$inferInsert;
+
+/**
+ * Append-only audit log. One row per state-changing agent action
+ * (ingestion, evaluation, synthesis, qa, rubric edit). The defensibility
+ * surface — every agent's actions traceable to its model, tokens, latency,
+ * resource, and outcome.
+ */
+export const auditEvents = pgTable("audit_events", {
+  id: text("id").primaryKey(),
+  eventType: text("event_type").notNull(),
+  resourceKind: text("resource_kind"),
+  resourceId: text("resource_id"),
+  actor: text("actor").notNull(),
+  model: text("model"),
+  inputTokens: integer("input_tokens"),
+  outputTokens: integer("output_tokens"),
+  latencyMs: integer("latency_ms"),
+  status: text("status"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type AuditEventRow = typeof auditEvents.$inferSelect;
+export type NewAuditEventRow = typeof auditEvents.$inferInsert;

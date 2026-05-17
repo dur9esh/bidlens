@@ -108,6 +108,15 @@ Two synthesis agents producing the deliverable artifacts procurement teams archi
 
 Both use the synthesis model chain (`pro → flash → flash-lite`) for highest reasoning quality.
 
+### PR 10 — Ask the agent + Audit trail (complete)
+
+The final PR closes the demo loop with two features:
+
+- **Ask the agent** (`/ask`) — open-ended Q&A grounded in the full BidLens corpus (RFP, bids, evaluations, comparative synthesis, memo, risk register). Every answer is cited to its source. Routes through the `qa` model chain (flash-lite-led for low interactive latency). Session state is per-visit; clicking "New session" resets the thread.
+- **Audit trail** (`/audit`) — chronological log of every state-changing agent action (ingestions, evaluations, synthesis runs, Q&A turns, rubric edits). Each event records model, token usage, latency, status, and metadata. JSON-exportable.
+
+After PR 10, BidLens has every surface a procurement team needs: RFP/bid review → rubric configuration → ingestion → per-vendor scoring → cross-vendor synthesis → memo → risk register → interactive Q&A → audit.
+
 ### PR 5.5 — AI fallback chain
 
 All Gemini calls go through `generateWithFallback()` in `lib/ai.ts`, which degrades gracefully on rate-limit (429) or transient server errors (5xx). Non-retryable errors (400 / 401 / 403, schema failures) surface immediately rather than burning the chain. Each ingestion and evaluation record stores the model that actually served it, so fallbacks are visible and attribution stays honest.
@@ -188,4 +197,6 @@ After the deploy, visit the production URL and confirm the system status card sh
 - [x] **PR 7 — Compliance Evaluator** — certification + BAA verification (deterministic pre-checks + agent rationale)
 - [x] **PR 8 — Comparative dashboard** — cross-vendor synthesis (`/compare`)
 - [x] **PR 9 — Evaluation memo + Risk register** — formal deliverable artifacts (`/memo`, `/risk-register`)
-- [ ] PR 10 — Ask the agent + Audit trail (Q&A and defensibility)
+- [x] **PR 10 — Ask the agent + Audit trail** — interactive Q&A (`/ask`) and defensibility log (`/audit`)
+
+**BidLens v1.0 — all 10 PRs shipped.**

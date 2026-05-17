@@ -112,7 +112,7 @@ const ROADMAP: RoadmapItem[] = [
     pr: 10,
     title: "Ask the agent + Audit trail",
     description: "Q&A and defensibility",
-    done: false,
+    done: true,
   },
 ];
 
@@ -298,6 +298,20 @@ export default function Home() {
               View risk register
               <ArrowRight className="size-4" />
             </Link>
+            <Link
+              href="/ask"
+              className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors"
+            >
+              Ask the agent
+              <ArrowRight className="size-4" />
+            </Link>
+            <Link
+              href="/audit"
+              className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors"
+            >
+              Audit trail
+              <ArrowRight className="size-4" />
+            </Link>
           </div>
         </section>
 
@@ -350,6 +364,11 @@ export default function Home() {
               </li>
             ))}
           </ol>
+          <div className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-800 flex items-center gap-2">
+            <Check className="size-4 text-emerald-600" />
+            BidLens v1.0 — all 10 PRs shipped. Every surface a procurement team
+            needs is live, end-to-end.
+          </div>
         </section>
 
         <RoutingPolicySection />
